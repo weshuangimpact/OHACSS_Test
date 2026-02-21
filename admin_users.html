@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>帳號權限管理 | OHACSS</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    
+    <link href="style.css" rel="stylesheet">
+    
+    <style>
+        /* 定義本頁主題色 (Account Cyan) - 覆蓋 style.css 預設值 */
+        :root { 
+            --theme-color: #0dcaf0; 
+            --theme-text: #055160;
+        }
+
+        /* 覆寫字卡標題顏色 */
+        .instruction-title {
+            color: var(--theme-text);
+        }
+
+        /* 既有功能 UI 設定 */
+        .search-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .card-list {
+            border: none;
+            border-left: 5px solid var(--theme-color);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        /* 角色標籤配色 */
+        .role-badge-admin { background-color: #dc3545; color: white; }
+        .role-badge-consultant { background-color: #ffc107; color: #212529; }
+        .role-badge-general { background-color: #6c757d; color: white; }
+
+        /* 按鈕樣式覆寫 */
+        .btn-theme {
+            background-color: var(--theme-color);
+            color: #fff;
+            font-weight: bold;
+            border: none;
+        }
+        .btn-theme:hover { background-color: #0bb5d8; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div class="container-fluid px-4 pb-5 mt-4 main-content">
+        
+        <div class="mb-4">
+            <h2 class="fw-bold text-dark mb-1">帳號權限管理</h2>
+            <p class="text-secondary">Account Mgmt 階段：管理系統使用者帳號、角色權限與狀態</p>
+        </div>
+
+        <div class="instruction-box">
+            <div class="instruction-title">
+                <i class="fas fa-info-circle me-2"></i>5W1H 設計理念：帳號權限與責任追溯
+            </div>
+            <p class="mb-0 text-dark" style="line-height: 1.6;">
+                本模組依循 5W1H 原則，記錄帳號身分（Who）、角色與權限內容（What）、權限來源（Where）及生效歷程（When），明確界定系統操作責任，作為管理控管與稽核追溯之制度依據。
+            </p>
+        </div>
+
+        <div class="search-box">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold small text-muted">關鍵字搜尋</label>
+                    <input type="text" id="search-input" class="form-control" placeholder="姓名 / Email...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold small text-muted">角色篩選</label>
+                    <select class="form-select" id="role-filter">
+                        <option value="">所有角色</option>
+                        <option value="admin">管理員 (Admin)</option>
+                        <option value="consultant">顧問 (Consultant)</option>
+                        <option value="doc_control">文管人員 (Doc_control)</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-theme w-100" onclick="loadUsers()">
+                        <i class="fas fa-search me-2"></i>查詢
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-list shadow">
+            <div class="card-header bg-white py-3 border-bottom-0">
+                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-list me-2"></i>人員清單 (Staff & Profiles)</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">姓名</th>
+                                <th>目前系統權限</th>
+                                <th>登入 Email (User ID)</th>
+                                <th>在職狀態</th>
+                                <th class="text-end pe-4">管理動作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTableBody">
+                            <tr><td colspan="5" class="text-center py-5 text-muted">載入中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="modal fade" id="inviteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header text-white" style="background-color: var(--theme-color);">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-user-check me-2"></i>啟用帳號 (直接開通)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="target-staff-id">
+                    <input type="hidden" id="target-user-id"> 
+                    <div class="alert alert-info bg-opacity-10 border-info border-opacity-25 mb-3 small" style="color: #055160;">
+                        <i class="fas fa-info-circle me-1"></i> 
+                        此操作將建立 Profiles 並連結人員清單。請將預設密碼告知使用者。
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">目標人員</label>
+                        <h5 class="fw-bold text-dark" id="invite-name">--</h5>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">登入 Email (帳號)</label>
+                        <input type="email" class="form-control" id="invite-email" placeholder="name@company.com">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">預設密碼</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control font-monospace" id="invite-password" value="12345678">
+                            <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('invite-password').select();document.execCommand('copy')">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="form-text text-muted">使用者首次登入後，可至「個人設定」修改密碼。</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">系統權限角色</label>
+                        <select class="form-select" id="invite-system-role">
+                            <option value="consultant">顧問 (Consultant)</option>
+                            <option value="doc_control">文管人員 (Doc_control)</option>
+                            <option value="admin">管理員 (Admin)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-theme fw-bold" onclick="directActivateUser()">
+                        <i class="fas fa-check-circle me-1"></i> 確認開通
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="config.js"></script>
+    
+    <script src="layout.js"></script>
+
+    <script>
+        // 1. 初始化與特定權限檢查
+        document.addEventListener('DOMContentLoaded', function() {
+            // Layout.js 會執行基本的登入檢查，但此頁面需要「管理員 (Admin)」專屬權限
+            // 使用 config.js 中的 Key 來讀取 Role
+            const roleKey = window.AppConfig.StorageKeys.USER_ROLE || 'currentUserRole';
+            const role = sessionStorage.getItem(roleKey);
+            
+            if (!role || role !== 'admin') {
+                alert('權限不足：此頁面僅限系統管理員存取。');
+                // 使用 config.js 中的 Dashboard 路徑
+                window.location.href = window.AppConfig.Paths.DASHBOARD || 'dashboard.html';
+                return;
+            }
+            
+            // 載入使用者列表
+            loadUsers();
+        });
+
+        // ==========================================
+        // Supabase 初始化 (使用 Config)
+        // ==========================================
+        // 確保 window.AppConfig 已載入
+        if (typeof window.AppConfig === 'undefined') {
+            console.error('Config not loaded!');
+        }
+
+        const supabaseClient = supabase.createClient(
+            window.AppConfig.Supabase.URL, 
+            window.AppConfig.Supabase.KEY
+        );
+
+        // ==========================================
+        // 核心邏輯 (loadUsers, directActivateUser, etc.)
+        // ==========================================
+        async function loadUsers() {
+            const tbody = document.getElementById('userTableBody');
+            const keyword = document.getElementById('search-input').value.trim().toLowerCase();
+            const roleFilter = document.getElementById('role-filter').value;
+            
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>資料載入中...</td></tr>';
+            
+            try {
+                // [關鍵] 同時讀取 role (職稱) 與 system_role (系統權限)
+                let query = supabaseClient.from('medical_staff').select('*').order('created_at', { ascending: false });
+                const { data: staffData, error } = await query;
+                if(error) throw error;
+
+                const userIds = staffData.map(s => s.user_id).filter(id => id);
+                let profilesMap = {};
+                if(userIds.length > 0) {
+                    const { data: profiles } = await supabaseClient.from('profiles').select('id, email').in('id', userIds);
+                    if(profiles) profiles.forEach(p => profilesMap[p.id] = p);
+                }
+
+                let filtered = staffData;
+                if(keyword) filtered = filtered.filter(s => (s.name && s.name.toLowerCase().includes(keyword)) || (s.email && s.email.toLowerCase().includes(keyword)));
+                
+                if(filtered.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">查無資料</td></tr>';
+                    return;
+                }
+
+                const rowsHtml = filtered.map(s => {
+                    const profile = profilesMap[s.user_id];
+                    const hasAccount = !!(s.user_id); 
+                    const emailValue = profile ? profile.email : (s.email || '');
+                    const emailDisplay = emailValue || '<span class="text-muted fst-italic">未綁定帳號</span>';
+                    
+                    // 權限顯示邏輯
+                    let displayRole = s.system_role;
+                    if (displayRole === 'medical' || !displayRole) {
+                        if (s.role === 'admin') displayRole = 'admin';
+                        else if (s.role === 'doc_control') displayRole = 'doc_control';
+                        else if (s.role === 'consultant') displayRole = 'consultant';
+                        else displayRole = 'doc_control'; 
+                    }
+
+                    if (roleFilter && displayRole !== roleFilter) return '';
+                    
+                    let roleBadge = '';
+                    switch(displayRole) {
+                        case 'admin': roleBadge = '<span class="badge role-badge-admin">管理員 (Admin)</span>'; break;
+                        case 'consultant': roleBadge = '<span class="badge role-badge-consultant">顧問 (Consultant)</span>'; break;
+                        case 'doc_control': roleBadge = '<span class="badge role-badge-general">文管人員 (Doc_control)</span>'; break;
+                        default: roleBadge = '<span class="badge role-badge-general">文管人員 (Doc_control)</span>'; break;
+                    }
+
+                    const statusBadge = s.is_active 
+                        ? '<span class="badge bg-success bg-opacity-10 text-success">在職 (Active)</span>' 
+                        : '<span class="badge bg-secondary">已停用 (Inactive)</span>';
+                    
+                    let actionBtn = '';
+                    let notifyBtn = '';
+
+                    if (emailValue) {
+                        notifyBtn = `<button class="btn btn-sm btn-outline-primary fw-bold ms-2" onclick="sendActivateNotice('${emailValue}', '${s.name}')">通知</button>`;
+                    }
+
+                    if (hasAccount) {
+                        if (s.is_active) {
+                            actionBtn = `<button class="btn btn-sm btn-outline-danger fw-bold" onclick="toggleStatus('${s.id}', false, '${s.name}')">停用</button> ${notifyBtn}`;
+                        } else {
+                            actionBtn = `<button class="btn btn-sm btn-outline-success fw-bold" onclick="toggleStatus('${s.id}', true, '${s.name}')">恢復</button> ${notifyBtn}`;
+                        }
+                    } else {
+                        actionBtn = `<button class="btn btn-sm btn-outline-info fw-bold" onclick="openActivateModal('${s.id}', '${s.name}', '${displayRole}', '${emailValue}')">啟用帳號</button> ${notifyBtn}`;
+                    }
+
+                    const deleteBtn = `<button class="btn btn-sm btn-outline-secondary ms-2" title="刪除此帳號與名單" onclick="deleteUserComplete('${s.id}', '${s.user_id || ''}', '${s.name}')">刪除</button>`;
+                    
+                    return `
+                        <tr>
+                            <td class="ps-4 fw-bold">${s.name}</td>
+                            <td>${roleBadge}</td>
+                            <td class="font-monospace small">${emailDisplay}</td>
+                            <td>${statusBadge}</td>
+                            <td class="text-end pe-4">${actionBtn} ${deleteBtn}</td>
+                        </tr>`;
+                }).join('');
+
+                if (rowsHtml.trim() === '') {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">查無符合條件的資料</td></tr>';
+                } else {
+                    tbody.innerHTML = rowsHtml;
+                }
+
+            } catch(e) {
+                console.error(e);
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-danger">讀取失敗: ${e.message}</td></tr>`;
+            }
+        }
+
+        function openActivateModal(id, name, defaultRole, email) {
+            document.getElementById('target-staff-id').value = id;
+            document.getElementById('target-user-id').value = '';
+            document.getElementById('invite-name').innerText = name;
+            
+            const validRoles = ['admin', 'consultant', 'doc_control'];
+            if (!validRoles.includes(defaultRole)) defaultRole = 'doc_control';
+            
+            document.getElementById('invite-system-role').value = defaultRole;
+            document.getElementById('invite-email').value = email || ''; 
+            document.getElementById('invite-password').value = '12345678';
+            new bootstrap.Modal(document.getElementById('inviteModal')).show();
+        }
+
+        async function directActivateUser() {
+            const staffId = document.getElementById('target-staff-id').value;
+            const email = document.getElementById('invite-email').value.trim();
+            const password = document.getElementById('invite-password').value;
+            const role = document.getElementById('invite-system-role').value;
+            const name = document.getElementById('invite-name').innerText;
+            if(!email || !password) return alert('請輸入 Email 和密碼');
+
+            const btn = document.querySelector('#inviteModal .btn-theme');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 執行 Step 1: 建立帳號...';
+
+            let newUserId = null;
+            try {
+                // Step 1: 建立 Auth 帳號 (使用臨時 Client)
+                const dummyStorage = { getItem: (key) => null, setItem: (key, value) => {}, removeItem: (key) => {} };
+                // 使用 Config 中的 URL/KEY 建立臨時 Client
+                const tempClient = supabase.createClient(
+                    window.AppConfig.Supabase.URL, 
+                    window.AppConfig.Supabase.KEY, 
+                    { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storage: dummyStorage } }
+                );
+                
+                const { data: authData, error: authError } = await tempClient.auth.signUp({
+                    email: email, password: password, options: { data: { full_name: name, role: role } }
+                });
+                if (authError) {
+                    if (authError.message.includes("already registered")) {
+                        throw new Error("❌ 失敗：此 Email 已存在於 Auth 系統中！請至 Supabase 後台處理。");
+                    }
+                    throw new Error("Auth 建立失敗: " + authError.message);
+                }
+
+                if (!authData.user || !authData.user.id) {
+                    throw new Error("Auth 請求完成但未回傳 ID。");
+                }
+
+                newUserId = authData.user.id;
+                btn.innerHTML = '<i class="fas fa-sync fa-spin"></i> 執行 Step 2: 寫入資料...';
+                
+                // Step 2: 寫入 Profiles
+                const { error: profileError } = await supabaseClient.from('profiles').upsert({
+                    id: newUserId, email: email, full_name: name, role: role, status: 'active', is_active: true,
+                    created_by: (await supabaseClient.auth.getUser()).data.user?.id 
+                });
+                if (profileError) throw new Error("Profile 寫入失敗: " + profileError.message);
+
+                // Step 3: 更新 Medical Staff
+                const { error: staffError } = await supabaseClient.from('medical_staff').update({ 
+                    user_id: newUserId, system_role: role, is_active: true, email: email
+                }).eq('id', staffId);
+                if (staffError) throw new Error("名單綁定失敗: " + staffError.message);
+
+                alert(`✅ 帳號開通完整成功！\n\nUser ID: ${newUserId}\n\n請嘗試登入。`);
+                bootstrap.Modal.getInstance(document.getElementById('inviteModal')).hide();
+                loadUsers();
+            } catch (err) {
+                console.error(err);
+                alert(err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function sendActivateNotice(email, name) {
+            if (!confirm(`確定要發送【開通通知】給 ${name} (${email}) 嗎？`)) return;
+            try {
+                const { data: sessionData } = await supabaseClient.auth.getSession();
+                const accessToken = sessionData.session?.access_token;
+
+                if (!accessToken) {
+                    alert('❌ 無法取得登入憑證，請重新登入');
+                    return;
+                }
+
+                // 呼叫 Edge Function (使用 Config URL 確保一致性)
+                // 假設 Functions 是掛在 Supabase Project URL 下
+                const functionUrl = `${window.AppConfig.Supabase.URL}/functions/v1/send-email`;
+                
+                const res = await fetch(functionUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`
+                        },
+                        body: JSON.stringify({
+                            type: 'activate',
+                            email: email,
+                            data: { name: name, email: email }
+                        })
+                    }
+                );
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(text || '寄送失敗');
+                }
+
+                alert(`✅ 已成功發送開通通知給 ${email}`);
+            } catch (err) {
+                console.error(err);
+                alert(`❌ 發送失敗：${err.message}`);
+            }
+        }
+
+        async function toggleStatus(staffId, isActive, name) {
+            const actionName = isActive ? "恢復權限" : "停用權限";
+            if (!confirm(`確定要對「${name}」執行【${actionName}】嗎？`)) return;
+
+            try {
+                const { error: staffError } = await supabaseClient.from('medical_staff').update({ is_active: isActive }).eq('id', staffId);
+                if (staffError) throw staffError;
+
+                const { data: staffData } = await supabaseClient.from('medical_staff').select('user_id').eq('id', staffId).single();
+                if (staffData && staffData.user_id) {
+                    await supabaseClient.from('profiles').update({ is_active: isActive, status: isActive ? 'active' : 'inactive' }).eq('id', staffData.user_id);
+                }
+                alert(`✅ 已成功${actionName}！`);
+                loadUsers();
+            } catch (err) {
+                console.error(err);
+                alert(`❌ 失敗: ` + err.message);
+            }
+        }
+
+        async function deleteUserComplete(staffId, userId, name) {
+            const confirmMsg = `⚠️ 危險操作警告 ⚠️\n\n確定要刪除「${name}」的所有資料嗎？\n\n執行步驟：\n1. 刪除人員名單 (若有服務紀錄將被擋下)\n2. 刪除登入帳號 (Auth)\n\n此動作無法復原！`;
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                // Step 1: 嘗試刪除 medical_staff (外鍵約束防呆)
+                const { error: staffError } = await supabaseClient.from('medical_staff').delete().eq('id', staffId);
+                
+                if (staffError) {
+                    if (staffError.code === '23503' || staffError.message.includes('foreign key constraint')) {
+                         throw new Error(`無法刪除：該人員已有「服務執行紀錄」或關聯資料。\n\n(資料庫保護機制生效，請先移除相關紀錄)`);
+                    }
+                    throw staffError;
+                }
+
+                // Step 2: 刪除 Auth 帳號
+                if (userId) {
+                    const { error: rpcError } = await supabaseClient.rpc('delete_user_by_id', { target_user_id: userId });
+
+                    if (rpcError) {
+                        alert(`⚠️ 人員名單已刪除，但 Auth 帳號刪除失敗。\n原因: ${rpcError.message}\n請至 Supabase 後台手動刪除 User。`);
+                    } else {
+                        alert(`✅ 成功刪除「${name}」的所有資料 (名單與帳號)。`);
+                    }
+                } else {
+                     alert(`✅ 成功刪除「${name}」的名單 (此人原無綁定帳號)。`);
+                }
+
+                loadUsers();
+            } catch (err) {
+                console.error(err);
+                alert(`❌ 刪除失敗: ${err.message}`);
+                loadUsers();
+            }
+        }
+    </script>
+</body>
+</html>

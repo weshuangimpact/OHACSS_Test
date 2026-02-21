@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OHACSS 操作說明書 v1.0</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* 說明書專用樣式 */
+        .manual-section { margin-bottom: 40px; border-bottom: 1px dashed #dee2e6; padding-bottom: 30px; }
+        .manual-section:last-child { border-bottom: none; }
+        .chapter-title { font-weight: 800; color: #212529; margin-bottom: 15px; border-left: 5px solid #0d6efd; padding-left: 15px; }
+        .sub-title { font-weight: 700; margin-top: 25px; margin-bottom: 10px; color: #495057; display: flex; align-items: center; }
+        .sub-title i { margin-right: 8px; opacity: 0.8; }
+        
+        /* 顏色主題 */
+        .text-plan { color: #4f46e5; }
+        .text-do { color: #0d6efd; }
+        .text-check { color: #198754; }
+        .text-act { color: #dc3545; }
+        .text-audit { color: #212529; }
+        .text-security { color: #17a2b8; }
+
+        .highlight-box { background-color: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 3px solid #dee2e6; margin: 10px 0; }
+        ul.dashed-list { list-style-type: none; padding-left: 0; }
+        ul.dashed-list > li { position: relative; padding-left: 20px; margin-bottom: 8px; }
+        ul.dashed-list > li::before { content: "-"; position: absolute; left: 0; color: #6c757d; }
+        
+        .badge-role { font-size: 0.8em; padding: 4px 8px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="container-fluid p-0">
+        
+        <div class="text-center py-4 bg-light rounded mb-4">
+            <h2 class="fw-bold text-dark"><i class="fas fa-book-reader me-2"></i>OHACSS 職業健康評鑑與合規支援系統</h2>
+            <h5 class="text-muted">操作說明書 v1.0</h5>
+            <p class="small text-secondary mt-2 mb-0">WeSmartAI - Making Trust Transparent.</p>
+        </div>
+
+        <div class="manual-section">
+            <h4 class="chapter-title text-plan">第一章：系統基礎建置與權限管理 (System Setup)</h4>
+            <p class="text-muted">本章節涵蓋系統上線初期的核心作業，包含建立 5W1H 基礎資料庫（人、事、時、地、物）以及設定使用者帳號與權限。此階段資料的完整性將直接影響後續評鑑、AI 輔助與報表產出的正確性。</p>
+
+            <h5 class="sub-title"><i class="fas fa-database text-plan"></i>1.1 基本資料建立 (Master Data Setup)</h5>
+            <p><strong>對應頁面：</strong>基本資料建立</p>
+            <p>本模組負責建立系統運作所需的基礎關聯，確保所有服務紀錄均可追溯至特定的人員、時間與場所。</p>
+            
+            <div class="highlight-box">
+                <strong>1.1.1 介面概觀與功能頁籤</strong>
+                <ul class="mt-2 mb-0 ps-3">
+                    <li><strong>客戶公司主檔 (Companies)：</strong>建立服務對象資料。</li>
+                    <li><strong>醫護/顧問名單 (Staff)：</strong>建立執行業務的人員名單。</li>
+                    <li><strong>服務執行歷程 (Records)：</strong>建立服務場次（母案）。</li>
+                    <li><strong>計畫管理 (Plans)：</strong>上傳年度三大計畫文件。</li>
+                </ul>
+            </div>
+
+            <strong>1.1.2 詳細操作說明</strong>
+            <ul class="list-group list-group-flush mt-2">
+                <li class="list-group-item">
+                    <strong class="text-primary">分頁 1：客戶公司主檔 (Companies)</strong><br>
+                    <span class="text-muted small">管理所有簽約之事業單位資料。</span>
+                    <ul class="dashed-list mt-2 small">
+                        <li><strong>【➕ 新增事業單位】</strong>：手動建立單一客戶資料。系統會自動建立預設作業場所「全廠」。(統編、名稱必填)</li>
+                        <li><strong>【📂 批次匯入公司】</strong>：支援 .xlsx/.csv。若統編已存在則更新，不存在則新增。</li>
+                        <li><strong>列表操作</strong>：<i class="fas fa-edit"></i> 編輯資料或狀態；<i class="fas fa-trash"></i> 刪除 (若有服務紀錄將被阻擋)。</li>
+                    </ul>
+                </li>
+                <li class="list-group-item">
+                    <strong class="text-success">分頁 2：醫護/顧問名單 (Staff)</strong><br>
+                    <span class="text-muted small">管理系統內所有人員名單（顧問、管理員、文管人員）。</span>
+                    <ul class="dashed-list mt-2 small">
+                        <li><strong>【➕ 新增醫護人員】</strong>：建立人員檔案（僅名單，尚未開通帳號）。</li>
+                        <li><strong>欄位說明</strong>：身分角色 (決定權限)、職務型態 (全職/兼職)、是否在職。</li>
+                        <li><strong>【📂 批次匯入人員】</strong>：依據 Excel 欄位自動判斷對應權限。</li>
+                    </ul>
+                </li>
+                <li class="list-group-item">
+                    <strong class="text-warning text-dark">分頁 3：服務執行歷程 (Service Records)</strong><br>
+                    <span class="text-muted small">建立服務的「母案」，即合約履行的具體場次紀錄。</span>
+                    <ul class="dashed-list mt-2 small">
+                        <li><strong>【➕ 新增服務歷程】</strong>：手動建立單一場次。需選擇客戶與顧問，日期留空代表年度母案。</li>
+                        <li><strong>【📂 批次匯入歷程】</strong>：快速匯入年度訪視排程。系統會自動檢核公司與顧問名稱。</li>
+                    </ul>
+                </li>
+                <li class="list-group-item">
+                    <strong class="text-info text-dark">分頁 4：計畫管理 (Annual Plans)</strong><br>
+                    <span class="text-muted small">針對每個服務年度，上傳法定需求的計畫書。</span>
+                    <ul class="dashed-list mt-2 small">
+                        <li><strong>【⚙️ 管理】</strong>：開啟上傳視窗，支援 A.職安衛管理計畫、B.風險評估總表、C.教育訓練計畫 (PDF/Office)。</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h5 class="sub-title mt-4"><i class="fas fa-user-shield text-plan"></i>1.2 帳號權限管理 (Account & Permission)</h5>
+            <p><strong>對應頁面：</strong>帳號權限管理 (僅限 Admin)</p>
+            <p>將「人員名單」正式開通為「系統登入帳號」，並管理其存取權限。</p>
+            
+            <div class="mb-3">
+                <strong>1.2.1 權限角色說明</strong><br>
+                <span class="badge bg-danger">管理員 (Admin)</span> 最高權限，可管理帳號、刪除資料。<br>
+                <span class="badge bg-warning text-dark">顧問 (Consultant)</span> 僅能查看與編輯「自己負責」的案件。<br>
+                <span class="badge bg-secondary">文管人員 (Doc_control)</span> 協助資料輸入與文件上傳。
+            </div>
+
+            <strong>1.2.2 功能按鈕詳解</strong>
+            <ul class="dashed-list small">
+                <li><strong>【🔍 查詢】</strong>：搭配關鍵字與角色篩選。</li>
+                <li><strong>【✅ 啟用帳號】</strong>：綁定 Email，設定預設密碼 (12345678)，正式開通權限。</li>
+                <li><strong>【🚫 停用 / 🔄 恢復】</strong>：暫時凍結或恢復帳號權限。</li>
+                <li><strong>【📧 通知】</strong>：發送 Email 通知信 (需 SMTP 設定)。</li>
+                <li><strong>【🗑️ 刪除】</strong>：危險操作，同時刪除名單與登入帳號 (若有服務紀錄會被阻擋)。</li>
+            </ul>
+        </div>
+
+        <div class="manual-section">
+            <h4 class="chapter-title text-do">第二章：核心作業與 PDCA 循環 (Core Operation)</h4>
+            <p class="text-muted">本章節說明系統的核心運作流程：顧問執行(Do)、管理審查(Check)、改善回覆(Act)。</p>
+
+            <h5 class="sub-title"><i class="fas fa-clipboard-list text-do"></i>2.1 服務執行歷程管理 (Plan & Do)</h5>
+            <p><strong>對應頁面：</strong>服務執行歷程管理 (顧問專用)</p>
+            
+            <div class="highlight-box">
+                <strong>操作流程三步驟：</strong>
+                <ol class="mb-0 ps-3 small">
+                    <li class="mb-1"><strong>選擇案件</strong>：輸入條件查詢母案。若母案已有待審核紀錄，可選擇「修改送審」或「新增另一筆」。</li>
+                    <li class="mb-1"><strong>執行紀錄與上傳</strong>：
+                        <ul>
+                            <li>填寫日期、時間、服務類別。</li>
+                            <li>勾選 A~P 標準項目並上傳 PDF。</li>
+                            <li>如有額外附件，使用 Q 項上傳。</li>
+                            <li>若為「補正重送」，請填寫改善作業紀錄 (Act)。</li>
+                        </ul>
+                    </li>
+                    <li><strong>完成送審</strong>：點擊【💾 存檔送審】，產生正式案號，狀態轉為 Pending。</li>
+                </ol>
+            </div>
+
+            <h5 class="sub-title"><i class="fas fa-tasks text-check"></i>2.2 管理者總覽 (Check & Act)</h5>
+            <p><strong>對應頁面：</strong>管理者總覽 (管理員專用)</p>
+            <p>品質監控儀表板，決定案件是「核定結案」還是「退回補正」。</p>
+            
+            <ul class="dashed-list small">
+                <li><strong>儀表板</strong>：顯示年度達成率、已核定與待審核數量。</li>
+                <li><strong>【👁️ 預覽審核】</strong>：檢視案件詳情與 PDF 預覽。</li>
+                <li><strong>【✉️ 審查通知 (補件)】</strong>：填寫原因與期限，退回顧問補正 (Correction Requested)。</li>
+                <li><strong>【🔔 催收通知】</strong>：發信提醒顧問。</li>
+                <li><strong>【⚠️ 特案允許結案】</strong>：針對缺件但有正當理由者 (需填寫理由)。</li>
+                <li><strong>【✅ 核定結案】</strong>：自動合併附件為證據檔案 (Evidence PDF) 並封存入庫。</li>
+            </ul>
+
+            <h5 class="sub-title"><i class="fas fa-robot text-warning text-dark"></i>2.3 評鑑支援 AI 智慧助理 (Evaluation)</h5>
+            <p><strong>對應頁面：</strong>評鑑支援 AI 智慧助理</p>
+            <p>模擬搜尋引擎，支援外部評鑑或深度稽核，快速撈取歷史證據。</p>
+            <ul class="dashed-list small">
+                <li><strong>搜尋</strong>：依日期、公司、顧問交叉檢索。</li>
+                <li><strong>【評鑑審查紀錄】</strong>：記錄委員意見 (符合/待改善)。</li>
+                <li><strong>【評鑑補件通知】</strong>：針對已結案資料發出新的補件要求。</li>
+                <li><strong>【檢視完整評鑑報告】</strong>：生成含浮水印的完整 HTML 報告 (基本資料+歷程+附件+計畫+改善)。</li>
+            </ul>
+        </div>
+
+        <div class="manual-section">
+            <h4 class="chapter-title text-info">第三章：個人化與支援 (Personal & Support)</h4>
+            
+            <h5 class="sub-title"><i class="fas fa-sliders-h text-info"></i>3.1 個人設定 (Profile Settings)</h5>
+            <ul class="dashed-list small">
+                <li><strong>系統外觀主題</strong>：切換春日櫻花、盛夏藍天、秋意楓紅、冬夜冰雪等風格。</li>
+                <li><strong>密碼重設</strong>：定期更換登入密碼，修改後需重新登入。</li>
+            </ul>
+
+            <h5 class="sub-title"><i class="fas fa-headset text-info"></i>3.2 線上客服中心 (Support Center)</h5>
+            <ul class="dashed-list small">
+                <li><strong>線上支援助理</strong>：右下角 Live Chat 免安裝對談 (週一至週五 09:00-18:00)。</li>
+                <li><strong>其他聯絡</strong>：緊急客服專線、問題回報信箱。</li>
+                <li><strong>ISO 支援附錄</strong>：ISO 45001 對應、ISO 27001 資安說明、Audit-Ready 設計說明。</li>
+            </ul>
+        </div>
+
+        <div class="manual-section">
+            <h4 class="chapter-title text-act">第四章：系統維護與稽核 (Maintenance & Audit)</h4>
+            
+            <h5 class="sub-title"><i class="fas fa-tools text-act"></i>4.1 評鑑改善專區 (Act)</h5>
+            <p><strong>對應頁面：</strong>評鑑改善專區</p>
+            <p>PDCA 之 Act 實踐。當案件被退回或評鑑指出缺失時，顧問需在此回覆。</p>
+            <ul class="dashed-list small">
+                <li><strong>操作</strong>：輸入案號調閱 -> 檢視審查意見 -> 新增改善行動 (日期/說明/附件) -> 確認送出並歸檔。</li>
+            </ul>
+
+            <h5 class="sub-title"><i class="fas fa-fingerprint text-audit"></i>4.2 系統日誌與稽核證據 (Audit Evidence)</h5>
+            <p><strong>對應頁面：</strong>系統日誌與稽核證據</p>
+            <p>記錄所有資料異動軌跡 (Who, When, Where, What)，確保不可否認性。</p>
+            <ul class="dashed-list small">
+                <li><strong>查詢</strong>：依時間範圍、動作類型 (Insert/Update/Delete)、關鍵字搜尋。</li>
+                <li><strong>匯出</strong>：支援匯出 CSV 報表供稽核查驗。</li>
+            </ul>
+        </div>
+
+        <div class="manual-section">
+            <h4 class="chapter-title text-security">第五章：系統安全與存取控制 (Security)</h4>
+            
+            <h5 class="sub-title"><i class="fas fa-shield-alt text-security"></i>5.1 系統登入</h5>
+            <ul class="dashed-list small">
+                <li><strong>登入</strong>：使用 Email 與密碼登入，支援密碼顯示功能。</li>
+                <li><strong>忘記密碼</strong>：輸入 Email 發送重設信，請至信箱收取連結。</li>
+            </ul>
+
+            <h5 class="sub-title"><i class="fas fa-key text-security"></i>5.2 密碼重設</h5>
+            <ul class="dashed-list small">
+                <li><strong>重設流程</strong>：點擊信中連結 -> 驗證有效性 -> 設定新密碼 -> 強制登出。</li>
+                <li><strong>安全提示</strong>：新密碼不得與舊密碼相同。</li>
+            </ul>
+        </div>
+
+        <div class="bg-light p-4 rounded text-center">
+            <h5 class="fw-bold text-dark">全文件總結</h5>
+            <p class="small text-secondary mb-0">
+                OHACSS 系統透過嚴謹的 PDCA 流程設計、完整的證據鏈保存機制，以及高標準的資安防護，協助企業落實職業健康管理與法規合規。<br>
+                <strong>Plan</strong> (基本資料) → <strong>Do</strong> (服務執行) → <strong>Check</strong> (管理總覽/AI) → <strong>Act</strong> (評鑑改善) → <strong>Audit</strong> (系統日誌)
+            </p>
+            <hr class="my-3">
+            <div class="text-muted small">WeSmartAI - Making Trust Transparent.</div>
+        </div>
+
+    </div>
+
+</body>
+</html>

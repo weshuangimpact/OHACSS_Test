@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系統日誌與稽核證據 | OHACSS</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    
+    <link href="style.css" rel="stylesheet">
+    
+    <style>
+        :root { 
+            /* 定義本頁主題色：深黑色 (對應 Audit Evidence) */
+            --theme-color: #212529; 
+        }
+
+        /* 覆寫字卡標題顏色 */
+        .instruction-title {
+            color: var(--theme-color);
+        }
+
+        /* 本頁特定 UI 元件設定 */
+        .table th { font-weight: 600; font-size: 0.9rem; }
+        .table td { font-size: 0.9rem; vertical-align: middle; }
+        
+        .badge-role-admin { background-color: #dc3545; color: white; }
+        .badge-role-manager { background-color: #0d6efd; color: white; }
+        .badge-role-user { background-color: #6c757d; color: white; }
+
+        .search-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container-fluid px-4 pb-5 mt-4 main-content">
+        
+        <div class="d-flex justify-content-between align-items-end mb-4">
+            <div>
+                <h2 class="fw-bold text-dark mb-1">系統日誌與稽核證據 (Audit Evidence)</h2>
+                <p class="text-secondary mb-0">Audit 階段：系統操作日誌與不可否認性稽核</p>
+            </div>
+            <button class="btn btn-success btn-sm fw-bold mb-1" onclick="exportLogs()">
+                <i class="fas fa-file-csv me-2"></i>匯出 CSV
+            </button>
+        </div>
+
+        <div class="instruction-box">
+            <div class="instruction-title">
+                <i class="fas fa-fingerprint me-2"></i>5W1H 設計理念：Audit (稽核) —— 保存完整操作歷程
+            </div>
+            <p class="mb-0 text-dark" style="line-height: 1.6;">
+                本系統依循資安稽核標準，詳實記錄Who(操作者)、When (時間)、Where(來源模組)、What(執行動作) 與How(異動內容)。
+                透過完整的軌跡留存，確保所有資料異動具備不可否認性與可追溯性。
+            </p>
+        </div>
+
+        <div class="search-box">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold small text-muted">開始時間</label>
+                    <input type="datetime-local" id="search-start" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold small text-muted">結束時間</label>
+                    <input type="datetime-local" id="search-end" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold small text-muted">動作類型</label>
+                    <select class="form-select" id="filter-action">
+                        <option value="">全部動作</option>
+                        <option value="INSERT">新增 (Insert)</option>
+                        <option value="UPDATE">更新 (Update)</option>
+                        <option value="DELETE">刪除 (Delete)</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold small text-muted">關鍵字</label>
+                    <input type="text" id="search-keyword" class="form-control" placeholder="姓名/內容...">
+                </div>
+                <div class="col-md-2">
+                    <button id="btn-search" class="btn btn-primary w-100 fw-bold" onclick="loadLogs()">
+                        <i class="fas fa-search me-2"></i>查詢紀錄
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">時間 (Time)</th>
+                                <th>操作人員</th>
+                                <th>動作類型</th>
+                                <th>目標資料表</th>
+                                <th>操作詳情 (Details)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logTableBody">
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <i class="fas fa-search fa-3x mb-3 text-secondary"></i><br>
+                                    請選擇時間範圍並點擊「查詢紀錄」
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted" id="record-count">顯示 0 筆資料</small>
+                    <small class="text-muted">單次查詢上限 1000 筆</small>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="config.js"></script>
+    
+    <script src="layout.js"></script>
+
+    <script>
+        // 1. 初始化與特定權限檢查
+        document.addEventListener('DOMContentLoaded', function() {
+            // Layout.js 會執行基本的登入檢查，但此頁面需要「管理員/文管」權限，排除醫護人員
+            const roleKey = window.AppConfig.StorageKeys.USER_ROLE || 'currentUserRole';
+            const role = sessionStorage.getItem(roleKey);
+            
+            // 若為醫護人員或無權限，踢回儀表板
+            if (!role || role === 'medical') {
+                alert('權限不足：此頁面僅限管理人員存取。');
+                window.location.href = window.AppConfig.Paths.DASHBOARD || 'dashboard.html';
+                return;
+            }
+
+            // 設定預設搜尋時間 (今天 00:00 ~ 23:59)
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0);
+            const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59);
+            
+            const formatDT = (d) => {
+                const pad = (n) => n.toString().padStart(2, '0');
+                return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            };
+
+            const startEl = document.getElementById('search-start');
+            const endEl = document.getElementById('search-end');
+            
+            if(startEl) startEl.value = formatDT(todayStart);
+            if(endEl) endEl.value = formatDT(todayEnd);
+        });
+
+        // ==========================================
+        // Supabase 初始化 (使用 Config)
+        // ==========================================
+        if (typeof window.AppConfig === 'undefined') {
+            console.error('Config not loaded!');
+        }
+
+        const supabaseClient = window.supabase.createClient(
+            window.AppConfig.Supabase.URL, 
+            window.AppConfig.Supabase.KEY
+        );
+
+        let currentLogs = [];
+
+        // ==========================================
+        // 核心邏輯
+        // ==========================================
+
+        // 輔助函式：解析並轉譯操作詳情 (Action Translation)
+        function formatLogDetails(log) {
+            if (!log.details) return '-';
+            
+            let content = {};
+            let isJson = false;
+            try {
+                content = JSON.parse(log.details);
+                isJson = true;
+            } catch (e) {
+                // 如果不是 JSON，直接回傳原始文字
+                return log.details;
+            }
+
+            // 對照表：將資料庫表名轉為中文
+            const tableMap = {
+                'companies': '客戶公司主檔',
+                'medical_staff': '醫護人員名單',
+                'workplaces': '作業場所',
+                'service_records': '服務執行歷程',
+                'profiles': '系統帳號權限',
+                'audit_logs': '稽核日誌',
+                'evidence': '評鑑佐證資料'
+            };
+            
+            // 對照表：動作轉為中文
+            const actionMap = {
+                'INSERT': '新增',
+                'UPDATE': '更新',
+                'DELETE': '刪除'
+            };
+
+            const tableName = tableMap[log.target_table] || log.target_table;
+            const actionName = actionMap[log.action_type] || log.action_type;
+            const userName = log.display_name || log.user_name || '系統人員';
+
+            // 嘗試從 JSON 中找出「人名」或「公司名」等關鍵資訊
+            let targetName = '';
+            if (content.name) targetName = content.name;
+            else if (content.full_name) targetName = content.full_name;
+            else if (content.department_name) targetName = content.department_name;
+            else if (content.tax_id) targetName = `統編 ${content.tax_id}`;
+            else if (content.visit_date) targetName = `${content.visit_date} 的服務紀錄`;
+            else if (content.id) targetName = `ID:${content.id.substring(0,8)}...`;
+            else targetName = '資料';
+
+            // 組合成人類可讀的句子
+            return `${userName} ${actionName} ${tableName} 中「${targetName}」的資料`;
+        }
+
+        async function loadLogs() {
+            const startStr = document.getElementById('search-start').value;
+            const endStr = document.getElementById('search-end').value;
+            const actionType = document.getElementById('filter-action').value;
+            const keyword = document.getElementById('search-keyword').value.trim();
+            const btn = document.getElementById('btn-search');
+            const tbody = document.getElementById('logTableBody');
+
+            if (!startStr || !endStr) {
+                alert('⚠️ 請務必選擇「開始時間」與「結束時間」。');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>查詢中...';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5">資料讀取中...</td></tr>';
+
+            try {
+                // 1. 查詢 Logs
+                let query = supabaseClient
+                    .from('audit_logs')
+                    .select('*')
+                    .gte('created_at', new Date(startStr).toISOString())
+                    .lte('created_at', new Date(endStr).toISOString())
+                    .order('created_at', { ascending: false })
+                    .limit(1000);
+
+                if (actionType) {
+                    query = query.eq('action_type', actionType);
+                }
+
+                const { data: logs, error } = await query;
+                if (error) throw error;
+
+                let displayData = logs || [];
+
+                // 2. 補全操作人員姓名 (透過 user_id 查詢 profiles)
+                if (displayData.length > 0) {
+                    const userIds = [...new Set(displayData.map(l => l.user_id).filter(id => id))];
+                    
+                    if (userIds.length > 0) {
+                        const { data: profiles, error: pError } = await supabaseClient
+                            .from('profiles')
+                            .select('id, full_name')
+                            .in('id', userIds);
+                        
+                        if (!pError && profiles) {
+                            const nameMap = {};
+                            profiles.forEach(p => nameMap[p.id] = p.full_name);
+
+                            displayData = displayData.map(log => ({
+                                ...log,
+                                display_name: nameMap[log.user_id] || log.user_name || 'Unknown'
+                            }));
+                        }
+                    }
+                }
+
+                // 3. 預先處理轉譯文字，以便進行關鍵字搜尋
+                displayData = displayData.map(log => ({
+                    ...log,
+                    translated_details: formatLogDetails(log) // 加入轉譯後的文字
+                }));
+
+                // 4. 前端關鍵字過濾
+                if (keyword) {
+                    const lowerKey = keyword.toLowerCase();
+                    displayData = displayData.filter(log => 
+                        (log.display_name && log.display_name.toLowerCase().includes(lowerKey)) ||
+                        (log.translated_details && log.translated_details.toLowerCase().includes(lowerKey)) ||
+                        (log.target_table && log.target_table.toLowerCase().includes(lowerKey))
+                    );
+                }
+
+                currentLogs = displayData;
+                
+                if (displayData.length === 0) {
+                    alert('🔍 查無符合條件的紀錄 (資料庫回傳 0 筆)');
+                }
+
+                renderTable(displayData);
+
+            } catch (err) {
+                console.error(err);
+                alert('❌ 讀取失敗: ' + err.message);
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-danger">讀取發生錯誤</td></tr>';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-search me-2"></i>查詢紀錄';
+            }
+        }
+
+        function renderTable(logs) {
+            const tbody = document.getElementById('logTableBody');
+            const countLabel = document.getElementById('record-count');
+
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">查無符合條件的紀錄</td></tr>';
+                countLabel.innerText = '顯示 0 筆資料';
+                return;
+            }
+
+            countLabel.innerText = `顯示 ${logs.length} 筆資料`;
+
+            const actionMap = {
+                'INSERT': '新增',
+                'UPDATE': '更新',
+                'DELETE': '刪除'
+            };
+
+            const tableMap = {
+                'companies': '客戶公司主檔',
+                'medical_staff': '醫護人員名單',
+                'workplaces': '作業場所',
+                'service_records': '服務執行歷程',
+                'profiles': '系統帳號權限',
+                'audit_logs': '稽核日誌',
+                'evidence': '評鑑佐證資料'
+            };
+
+            tbody.innerHTML = logs.map(log => {
+                const timeStr = new Date(log.created_at).toLocaleString('zh-TW', { hour12: false });
+                
+                // 動作類型顏色
+                let actionColor = 'text-dark';
+                let actionText = actionMap[log.action_type] || log.action_type;
+                if (log.action_type === 'DELETE') actionColor = 'text-danger fw-bold';
+                if (log.action_type === 'INSERT') actionColor = 'text-success fw-bold';
+                if (log.action_type === 'UPDATE') actionColor = 'text-primary fw-bold';
+
+                // 資料表中文
+                let tableName = tableMap[log.target_table] || log.target_table;
+
+                return `
+                <tr class="animate__animated animate__fadeIn">
+                    <td class="ps-4 text-muted small font-monospace">${timeStr}</td>
+                    <td class="fw-bold">${log.display_name || log.user_name || 'Unknown'}</td>
+                    <td class="${actionColor}">${actionText}</td>
+                    <td><span class="badge bg-light text-dark border">${tableName}</span></td>
+                    <td class="text-muted small">${log.translated_details}</td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        function exportLogs() {
+            if (currentLogs.length === 0) return alert('目前無資料可匯出，請先執行查詢。');
+
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
+            csvContent += "時間,操作人員,動作,目標資料表,操作詳情\n";
+
+            const actionMap = { 'INSERT': '新增', 'UPDATE': '更新', 'DELETE': '刪除' };
+            const tableMap = {
+                'companies': '客戶公司主檔',
+                'medical_staff': '醫護人員名單',
+                'workplaces': '作業場所',
+                'service_records': '服務執行歷程',
+                'profiles': '系統帳號權限',
+                'audit_logs': '稽核日誌',
+                'evidence': '評鑑佐證資料'
+            };
+
+            currentLogs.forEach(log => {
+                const time = new Date(log.created_at).toLocaleString('zh-TW', { hour12: false });
+                const actionText = actionMap[log.action_type] || log.action_type;
+                const tableText = tableMap[log.target_table] || log.target_table;
+                const escape = (text) => text ? `"${text.replace(/"/g, '""')}"` : '""';
+                
+                const row = [
+                    escape(time),
+                    escape(log.display_name || log.user_name),
+                    escape(actionText),
+                    escape(tableText),
+                    escape(log.translated_details) 
+                ].join(",");
+                
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `OHSMS_稽核紀錄_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>

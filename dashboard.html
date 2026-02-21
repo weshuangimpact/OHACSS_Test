@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工作儀表板 | OHACSS</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <script src="config.js"></script>
+    
+    <script src="layout.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        :root {
+            --card-hover-transform: translateY(-5px);
+        }
+
+        /* 修正 Bootstrap Container 在全螢幕下的邊距 (儀表板特規) */
+        .container-fluid {
+            padding-left: 2rem;
+            padding-right: 2rem;
+        }
+
+        /* =========================================
+           Dashboard 卡片 UI 設定
+           ========================================= */
+        .dashboard-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            height: 100%;
+            border-left: 4px solid transparent; /* 左側飾條預留 */
+            background-color: #fff; /* 確保卡片有背景色 */
+        }
+        .dashboard-card:hover {
+            transform: var(--card-hover-transform);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 卡片左側飾條顏色定義 */
+        .card-plan { border-left-color: #0d6efd; }
+        .card-check { border-left-color: #198754; }
+        .card-eval { border-left-color: #ffc107; }
+        .card-act { border-left-color: #dc3545; } 
+        .card-data { border-left-color: #4f46e5; }
+        .card-admin { border-left-color: #212529; }
+        .card-account { border-left-color: #0dcaf0; }
+        .card-profile { border-left-color: #6c757d; }
+        .card-service { border-left-color: #e83e8c; }
+
+        .icon-wrapper {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        .guide-text {
+            font-size: 0.85rem;
+            color: #6c757d;
+            line-height: 1.4;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container-fluid px-4 mt-4 pb-5 main-content">
+        
+        <div class="mb-4">
+            <h2 class="fw-bold text-dark mb-1">工作儀表板</h2>
+            <p class="text-secondary">請選擇下方功能模組進行操作</p>
+        </div>
+
+        <div class="instruction-box">
+            <div class="instruction-title">
+                <i class="fas fa-network-wired me-2"></i>系統設計精神：內外控 (Internal & External Control) × Evidence × 5W1H
+            </div>
+            <p class="mb-0 text-dark" style="line-height: 1.6;">
+                本系統採用 <strong>內外控 (Internal & External Control)</strong> 核心架構，結合 Evidence-based 證據導向與 5W1H 可追溯原則。第一層 (內控) 透過主管查核把關日常服務品質與證據完整性；第二層 (外控) 透過外部評鑑與稽核軌跡疊加，落實合規診斷與組織持續改善。確保所有歷程皆可被重建與驗證，作為績效評估與外部稽核的最強後盾。
+            </p>
+        </div>
+
+        <div class="row g-4">
+            
+            <div class="col-xl-3 col-md-6" id="card-index1">
+                <div class="card dashboard-card bg-white card-plan" onclick="window.location.href='service-execution.html'">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-uppercase text-primary fw-bold small mb-1">Plan / Do</h6>
+                                <h5 class="card-title fw-bold mb-2">服務執行歷程管理</h5>
+                            </div>
+                            <div class="icon-wrapper bg-primary bg-opacity-10 text-primary">
+                                <i class="fas fa-upload"></i>
+                            </div>
+                        </div>
+                        <div class="guide-text">
+                            <strong>內控起點：</strong><br>
+                            前端顧問負責完整上傳服務執行紀錄表及相關附件佐證，建立不可否認之第一手原始證據。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6" id="card-index2">
+                <div class="card dashboard-card bg-white card-check" onclick="window.location.href='admin-overview.html'">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-uppercase text-success fw-bold small mb-1">Check</h6>
+                                <h5 class="card-title fw-bold mb-2">管理者總覽</h5>
+                            </div>
+                            <div class="icon-wrapper bg-success bg-opacity-10 text-success">
+                                <i class="fas fa-chart-pie"></i>
+                            </div>
+                        </div>
+                        <div class="guide-text">
+                            <strong>內控把關：</strong><br>
+                            主管人員進行內部品質審視，若發現缺件可立即要求前端退回補正，確保所有資料達評鑑要求之結案標準。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6" id="card-index3">
+                <div class="card dashboard-card bg-white card-eval" onclick="window.location.href='ai-assistant.html'">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-uppercase text-warning fw-bold small mb-1">Evaluation</h6>
+                                <h5 class="card-title fw-bold mb-2">評鑑支援助理</h5>
+                            </div>
+                            <div class="icon-wrapper bg-warning bg-opacity-10 text-warning">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                        </div>
+                        <div class="guide-text">
+                            <strong>評鑑外控：</strong><br>
+                            針對已內部結案的資料，因應外部評鑑委員之改善要求，並針對缺失進行改善行動。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6" id="card-index5">
+                <div class="card dashboard-card bg-white card-act" onclick="window.location.href='improvement-ac.html'">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-uppercase text-danger fw-bold small mb-1">Act</h6>
+                                <h5 class="card-title fw-bold mb-2">評鑑改善行動</h5>
+                            </div>
+                            <div class="icon-wrapper bg-danger bg-opacity-10 text-danger">
+                                <i class="fas fa-tools"></i>
+                            </div>
+                        </div>
+                        <div class="guide-text">
+                            <strong>持續改善：</strong><br>
+                            承接評鑑缺失，由前端顧問或主管執行矯正措施。系統採「歷程疊加不覆蓋」原則，完整保留改善軌跡以供複檢。
+                        </div>
+                    </div>
+                </div>
+            </div>      
+            
+            <div class="col-xl-3 col-md-6" id="card-index7">
+                <div class="card dashboard-card bg-white card-data" onclick="window.location.href='master-data.html'">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-uppercase fw-bold small mb-1" style="color: #4f46e5;">Data Mgmt</h6>
+                                <h5 class="card-title fw-bold mb-2">基本資料建立</h5>
+                            </div>
+                            <div class="icon-wrapper bg-light" style="color: #4f46e5;">
+                                <i class="fas fa-database"></i>
+                            </div>
+                        </div>
+                        <div class="guide-text">
+                            操作指引：<br>
+                            建立客戶主檔、作業場所資料與合約期程設定。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6" id="card-index6">
+                <div class="card dashboard-card bg-white card-admin" onclick="window.location.href='audit-logs.html'">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-uppercase text-dark fw-bold small mb-1">Audit Evidence</h6>
+                                <h5 class="card-title fw-bold mb-2">系統日誌與稽核證據</h5>
+                            </div>
+                            <div class="icon-wrapper bg-dark bg-opacity-10 text-dark">
+                                <i class="fas fa-clipboard-list"></i>
+                            </div>
+                        </div>
+                        <div class="guide-text">
+                            操作指引：<br>
+                            檢視系統操作日誌、管理稽核介面。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6" id="card-users">
+                <div class="card dashboard-card bg-white card-account" onclick="window.location.href='admin_users.html'">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-uppercase fw-bold small mb-1" style="color: #0dcaf0;">Account Mgmt</h6>
+                                <h5 class="card-title fw-bold mb-2">帳號權限管理</h5>
+                            </div>
+                            <div class="icon-wrapper bg-info bg-opacity-10 text-info">
+                                <i class="fas fa-users-cog"></i>
+                            </div>
+                        </div>
+                        <div class="guide-text">
+                            操作指引：<br>
+                            管理系統使用者帳號、角色權限指派與帳號存續狀態設定。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6" id="card-profile">
+                <div class="card dashboard-card bg-white card-profile" onclick="window.location.href='profile_settings.html'">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-uppercase fw-bold small mb-1" style="color: #6c757d;">Profile Settings</h6>
+                                <h5 class="card-title fw-bold mb-2">個人帳號密碼與主題管理</h5>
+                            </div>
+                            <div class="icon-wrapper bg-secondary bg-opacity-10 text-secondary">
+                                <i class="fas fa-user-lock"></i>
+                            </div>
+                        </div>
+                        <div class="guide-text">
+                            操作指引：<br>
+                            修改個人密碼及視覺主題。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6" id="card-index4">
+                <div class="card dashboard-card bg-white card-service" onclick="window.location.href='support-center.html'">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-uppercase fw-bold small mb-1" style="color: #e83e8c;">Service</h6>
+                                <h5 class="card-title fw-bold mb-2">線上客服中心</h5>
+                            </div>
+                            <div class="icon-wrapper bg-danger bg-opacity-10" style="color: #e83e8c;">
+                                <i class="fas fa-headset"></i>
+                            </div>
+                        </div>
+                        <div class="guide-text">
+                            操作指引：<br>
+                            提供即時諮詢管道與問題回報，協助解決系統操作問題。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // ------------------------------------------
+            // 權限邏輯 (RBAC) - 控制 Dashboard 卡片顯示
+            // ------------------------------------------
+            const userRole = sessionStorage.getItem(window.AppConfig.StorageKeys.USER_ROLE) || 'admin';
+
+            const cards = {
+                plan: document.getElementById('card-index1'),
+                manager: document.getElementById('card-index2'),
+                eval: document.getElementById('card-index3'),
+                act: document.getElementById('card-index5'), 
+                maint: document.getElementById('card-index6'),
+                master: document.getElementById('card-index7'),
+                users: document.getElementById('card-users'),
+                profile: document.getElementById('card-profile'),
+                service: document.getElementById('card-index4')
+            };
+
+            // 輔助函式
+            const show = (el) => { if(el) el.style.display = 'block'; }
+            const hide = (el) => { if(el) el.style.display = 'none'; }
+
+            // 角色判斷
+            if (userRole === 'admin') {
+                // Admin: 全部可見
+                Object.values(cards).forEach(show);
+            }
+            else if (userRole === 'doc_control' || userRole === 'general') {
+                // Doc Control: 2, 3, 7, 6, profile, 4 (隱藏 1, 5, users)
+                hide(cards.plan);       // 1
+                show(cards.manager);    // 2
+                show(cards.eval);       // 3
+                hide(cards.act);        // 5 (文控不用改進)
+                show(cards.maint);      // 6
+                show(cards.master);     // 7
+                hide(cards.users);      // Users
+                show(cards.profile);    // Profile
+                show(cards.service);    // 4
+            }
+            else if (userRole === 'consultant') {
+                // Consultant: 1, 5, profile, 4 (隱藏 2, 3, 6, 7, users)
+                show(cards.plan);       // 1
+                hide(cards.manager);    // 2
+                hide(cards.eval);       // 3
+                show(cards.act);        // 5 (顧問需要填寫改善紀錄)
+                hide(cards.maint);      // 6
+                hide(cards.master);     // 7
+                hide(cards.users);      // Users
+                show(cards.profile);    // Profile
+                show(cards.service);    // 4
+            }
+        });
+    </script>
+</body>
+</html>

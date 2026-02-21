@@ -1,0 +1,1710 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基本資料建立 | OHACSS</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.css"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <link href="style.css" rel="stylesheet">
+
+    <style>
+        :root { 
+            --theme-color: #4f46e5; /* 定義本頁主題色：紫色 (對應 Master Data) */
+        }
+
+        /* 覆寫字卡標題顏色 */
+        .instruction-title {
+            color: var(--theme-color);
+        }
+
+        /* 本頁特定 UI 元件設定 */
+        .section-title { border-left: 5px solid var(--theme-color); padding-left: 15px; margin-bottom: 20px; }
+        .card-header { background-color: white; border-bottom: 1px solid #f0f0f0; }
+        .table th { font-weight: 600; color: #555; background-color: #f8f9fa; white-space: nowrap; }
+        .table td { vertical-align: middle; }
+        
+        /* 頁籤樣式 */
+        .nav-pills .nav-link { color: #555; font-weight: 600; }
+        .nav-pills .nav-link.active { background-color: var(--theme-color); color: white; }
+        
+        /* 匯入區塊樣式 */
+        .import-area { border: 2px dashed #cbd5e1; border-radius: 8px; padding: 20px; text-align: center; background: #fff; transition: all 0.3s; cursor: pointer; }
+        .import-area:hover { border-color: var(--theme-color); background: #eef2ff; }
+        
+        /* 計畫管理專用樣式 */
+        .plan-link { font-size: 0.9rem; text-decoration: none; font-weight: 600; }
+        .plan-link:hover { text-decoration: underline; }
+        .plan-missing { color: #adb5bd; font-size: 0.85rem; }
+        .plan-cell { min-width: 160px; } /* 加寬欄位以容納時間 */
+    </style>
+</head>
+<body>
+
+    <div class="container-fluid px-4 pb-5 mt-4 main-content">
+        
+        <div class="mb-4">
+            <h2 class="fw-bold text-dark mb-1">基本資料建立 (5W1H)</h2>
+            <p class="text-secondary">建立人、事、時、地、物的基礎關聯資料庫</p>
+        </div>
+
+        <div class="instruction-box">
+            <div class="instruction-title">
+                <i class="fas fa-database me-2"></i>設計理念：5W1H 核心架構 —— 確保完整追溯性
+            </div>
+            <p class="mb-0 text-dark" style="line-height: 1.6;">
+                本模組透過系統化方式連結顧問（Who）、時間（When）、場所（Where）與事項（What），並補足執行方式（How）與法規依據（Why），作為所有服務、評鑑與稽核紀錄的共同基礎，確保資料一致、完整且可追溯。
+            </p>
+        </div>
+        
+        <ul class="nav nav-pills mb-4" id="pills-tab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="pills-company-tab" data-bs-toggle="pill" data-bs-target="#pills-company" type="button" role="tab">1. 客戶公司主檔</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pills-staff-tab" data-bs-toggle="pill" data-bs-target="#pills-staff" type="button" role="tab">2. 醫護/顧問名單</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pills-record-tab" data-bs-toggle="pill" data-bs-target="#pills-record" type="button" role="tab">3. 服務執行歷程</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pills-plan-tab" data-bs-toggle="pill" data-bs-target="#pills-plan" type="button" role="tab">4. 計畫管理</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="pills-tabContent">
+            
+            <div class="tab-pane fade show active" id="pills-company" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-building me-2 text-primary"></i>公司列表 (Companies)</h6>
+                                <div class="input-group input-group-sm w-auto">
+                                    <input type="text" class="form-control" placeholder="搜尋公司..." id="search-company">
+                                    <button class="btn btn-outline-secondary" onclick="loadCompanies()"><i class="fas fa-search"></i></button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 600px;">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th>統編</th>
+                                                <th>公司名稱</th>
+                                                <th>地址</th>
+                                                <th>聯絡人</th>
+                                                <th>合約狀態</th>
+                                                <th class="text-end">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="companyTableBody">
+                                            <tr><td colspan="6" class="text-center py-4">載入中...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="d-grid gap-2 mb-4">
+                            <button class="btn btn-primary fw-bold py-2" onclick="openCompanyModal()">
+                                <i class="fas fa-plus me-2"></i>新增事業單位
+                            </button>
+                        </div>
+
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-white fw-bold"><i class="fas fa-file-import me-2"></i>批次匯入公司</div>
+                            <div class="card-body">
+                                <div class="import-area" onclick="document.getElementById('file-company').click()">
+                                    <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                                    <p class="mb-0 small text-muted">點擊上傳 Excel / CSV</p>
+                                    <input type="file" id="file-company" hidden accept=".csv, .xlsx, .xls" onchange="handleFileSelect(this, 'company')">
+                                </div>
+                                <div class="mt-2 text-end">
+                                    <a href="#" class="small text-decoration-none" onclick="downloadTemplate('company')"><i class="fas fa-download me-1"></i>下載範本</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-sm bg-light">
+                            <div class="card-body">
+                                <h6 class="fw-bold text-muted small">系統統計</h6>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>總客戶數：</span>
+                                    <strong id="stat-company-count">0</strong>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>有效合約：</span>
+                                    <strong class="text-success" id="stat-active-contract">0</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="pills-staff" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-user-nurse me-2 text-success"></i>人員列表 (Medical Staff)</h6>
+                                <div class="input-group input-group-sm w-auto">
+                                    <input type="text" class="form-control" placeholder="搜尋姓名..." id="search-staff">
+                                    <button class="btn btn-outline-secondary" onclick="loadStaff()"><i class="fas fa-search"></i></button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 600px;">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th>姓名</th>
+                                                <th>身分</th>
+                                                <th>職務</th>
+                                                <th>電話</th>
+                                                <th>Email</th>
+                                                <th class="text-end">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="staffTableBody">
+                                            <tr><td colspan="6" class="text-center py-4">載入中...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="d-grid gap-2 mb-4">
+                            <button class="btn btn-success fw-bold py-2" onclick="openStaffModal()">
+                                <i class="fas fa-plus me-2"></i>新增醫護人員
+                            </button>
+                        </div>
+
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-white fw-bold"><i class="fas fa-file-import me-2"></i>批次匯入人員</div>
+                            <div class="card-body">
+                                <div class="import-area" onclick="document.getElementById('file-staff').click()">
+                                    <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                                    <p class="mb-0 small text-muted">點擊上傳 Excel / CSV</p>
+                                    <input type="file" id="file-staff" hidden accept=".csv, .xlsx, .xls" onchange="handleFileSelect(this, 'staff')">
+                                </div>
+                                <div class="mt-2 text-end">
+                                    <a href="#" class="small text-decoration-none" onclick="downloadTemplate('staff')"><i class="fas fa-download me-1"></i>下載範本</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="pills-record" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-history me-2 text-warning"></i>服務歷程 (Service Records)</h6>
+                                <div class="input-group input-group-sm w-auto">
+                                    <input type="text" class="form-control" placeholder="搜尋公司或顧問..." id="search-record">
+                                    <button class="btn btn-outline-secondary" onclick="loadRecords()"><i class="fas fa-search"></i></button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 600px;">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th>日期</th>
+                                                <th>客戶公司</th>
+                                                <th>負責顧問</th>
+                                                <th>起訖時間</th>
+                                                <th class="text-end">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="recordTableBody">
+                                            <tr><td colspan="5" class="text-center py-4">載入中...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="d-grid gap-2 mb-4">
+                            <button class="btn btn-warning fw-bold py-2 text-dark" onclick="openRecordModal()">
+                                <i class="fas fa-plus me-2"></i>新增服務歷程 (母案)
+                            </button>
+                        </div>
+
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-white fw-bold"><i class="fas fa-file-import me-2"></i>批次匯入歷程</div>
+                            <div class="card-body">
+                                <div class="import-area" onclick="document.getElementById('file-record').click()">
+                                    <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                                    <p class="mb-0 small text-muted">點擊上傳 Excel / CSV</p>
+                                    <input type="file" id="file-record" hidden accept=".csv, .xlsx, .xls" onchange="handleFileSelect(this, 'record')">
+                                </div>
+                                <div class="mt-2 text-end">
+                                    <small class="text-muted d-block mb-1"><i class="fas fa-info-circle"></i> 匯入支援：公司/顧問/日期/時間/事項</small>
+                                    <a href="#" class="small text-decoration-none" onclick="downloadTemplate('record')"><i class="fas fa-download me-1"></i>下載包含現有資料之範本</a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                         <div class="card border-0 shadow-sm bg-light">
+                            <div class="card-body">
+                                <h6 class="fw-bold text-muted small">歷程統計</h6>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>總服務場次：</span>
+                                    <strong id="stat-record-count">0</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="pills-plan" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-lg-12">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-tasks me-2 text-primary"></i>年度計畫管理 (Annual Plans)</h6>
+                                <div class="input-group input-group-sm w-auto">
+                                    <input type="text" class="form-control" placeholder="搜尋公司..." id="search-plan">
+                                    <button class="btn btn-outline-secondary" onclick="loadPlans()"><i class="fas fa-search"></i></button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 600px;">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th style="width: 100px;">年度</th>
+                                                <th>客戶公司</th>
+                                                <th class="text-center plan-cell">A.職安計畫</th>
+                                                <th class="text-center plan-cell">B.風險評估</th>
+                                                <th class="text-center plan-cell">C.教育訓練</th>
+                                                <th class="text-end">管理</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="planTableBody">
+                                            <tr><td colspan="6" class="text-center py-4">載入中...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="modal fade" id="companyModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="companyModalTitle">新增事業單位</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="companyForm">
+                        <input type="hidden" id="company-id">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">統一編號 *</label>
+                                <input type="text" class="form-control" id="company-tax-id" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">公司名稱 *</label>
+                                <input type="text" class="form-control" id="company-name" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">地址</label>
+                            <input type="text" class="form-control" id="company-address">
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">聯絡人</label>
+                                <input type="text" class="form-control" id="company-contact">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">電話</label>
+                                <input type="text" class="form-control" id="company-phone">
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-primary">合約開始日</label>
+                                <input type="date" class="form-control" id="contract-start">
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex justify-content-between">
+                                    <label class="form-label fw-bold small text-primary">合約狀態</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="contract-active" checked onchange="toggleEndDate(this)">
+                                        <label class="form-check-label small" for="contract-active">服務中</label>
+                                    </div>
+                                </div>
+                                <input type="date" class="form-control" id="contract-end" disabled placeholder="合約結束日">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-danger" id="btn-delete-company" onclick="deleteCompany()" style="display:none;">
+                        <i class="fas fa-trash me-1"></i>刪除
+                    </button>
+                    <div class="ms-auto">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-primary" onclick="saveCompany()">儲存變更</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="staffModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="staffModalTitle">新增醫護人員</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="staffForm">
+                        <input type="hidden" id="staff-id">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">姓名 *</label>
+                                <input type="text" class="form-control" id="staff-name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">身分角色</label>
+                                <select class="form-select" id="staff-role">
+                                    <option value="consultant">顧問</option>
+                                    <option value="admin">管理員</option>
+                                    <option value="doc_control">文管人員</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">職務型態</label>
+                                <select class="form-select" id="staff-type">
+                                    <option value="全職">全職</option>
+                                    <option value="兼職">兼職 (特約)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">電話</label>
+                                <input type="text" class="form-control" id="staff-phone">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Email</label>
+                            <input type="email" class="form-control" id="staff-email">
+                        </div>
+                        <hr>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-success">入職日期</label>
+                                <input type="date" class="form-control" id="staff-onboard">
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex justify-content-between">
+                                    <label class="form-label fw-bold small text-success">是否在職</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="staff-active" checked onchange="toggleResignDate(this)">
+                                        <label class="form-check-label small" for="staff-active">在職中</label>
+                                    </div>
+                                </div>
+                                <input type="date" class="form-control" id="staff-resign" disabled placeholder="離職日期">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-danger" id="btn-delete-staff" onclick="deleteStaff()" style="display:none;">
+                        <i class="fas fa-trash me-1"></i>刪除
+                    </button>
+                    <div class="ms-auto">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-success" onclick="saveStaff()">儲存變更</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="recordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="recordModalTitle">新增服務歷程</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="recordForm">
+                        <input type="hidden" id="record-id">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">服務客戶 (公司) *</label>
+                            <select class="form-select" id="record-company" required>
+                                <option value="">載入中...</option>
+                            </select>
+                            <div class="form-text small">系統將自動對應至該公司的作業場所 (Workplace)</div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">負責顧問 *</label>
+                                <select class="form-select" id="record-consultant" required>
+                                    <option value="">載入中...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">服務日期</label>
+                                <input type="date" class="form-control" id="record-date">
+                                <div class="form-text small text-primary">(合約起始或年度計畫)</div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3" style="display:none;">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">開始時間</label>
+                                <input type="time" class="form-control" id="record-start">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">結束時間</label>
+                                <input type="time" class="form-control" id="record-end">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" style="display:none;">
+                            <label class="form-label fw-bold small">執行事項 (選填)</label>
+                            <input type="text" class="form-control" id="record-items" placeholder="例如：噪音檢測、法規諮詢...">
+                        </div>
+
+                    </form>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-danger" id="btn-delete-record" onclick="deleteRecord()" style="display:none;">
+                        <i class="fas fa-trash me-1"></i>刪除
+                    </button>
+                    <div class="ms-auto">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-warning text-dark" onclick="saveRecord()">儲存</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="planModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-cloud-upload-alt me-2"></i>年度計畫管理</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="planForm">
+                        <input type="hidden" id="plan-record-id">
+                        <input type="hidden" id="plan-workplace-id">
+
+                        <div class="alert alert-light border d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h5 class="mb-1 fw-bold text-dark" id="plan-company-name">載入中...</h5>
+                                <div class="text-secondary small">負責顧問：<span id="plan-consultant-name">-</span></div>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <label class="me-2 fw-bold text-primary">所屬年度：</label>
+                                <input type="number" class="form-control" id="plan-year" style="width: 100px;" placeholder="2026">
+                            </div>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="p-3 border rounded h-100 bg-light">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="fw-bold text-dark mb-0">A. 職安衛管理計畫</h6>
+                                        <button type="button" class="btn btn-sm btn-outline-danger border-0 p-1" onclick="deletePlanFile('plan_osh')" title="刪除檔案">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                    <div class="mb-3 text-center" id="link-osh">
+                                        <span class="text-muted small">尚未上傳</span>
+                                    </div>
+                                    <input type="file" class="form-control form-control-sm" id="file-osh" accept=".pdf,.doc,.docx">
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="p-3 border rounded h-100 bg-light">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="fw-bold text-dark mb-0">B. 風險評估總表</h6>
+                                        <button type="button" class="btn btn-sm btn-outline-danger border-0 p-1" onclick="deletePlanFile('plan_risk')" title="刪除檔案">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                    <div class="mb-3 text-center" id="link-risk">
+                                        <span class="text-muted small">尚未上傳</span>
+                                    </div>
+                                    <input type="file" class="form-control form-control-sm" id="file-risk" accept=".pdf,.xlsx,.xls">
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="p-3 border rounded h-100 bg-light">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="fw-bold text-dark mb-0">C. 教育訓練計畫</h6>
+                                        <button type="button" class="btn btn-sm btn-outline-danger border-0 p-1" onclick="deletePlanFile('plan_training')" title="刪除檔案">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                    <div class="mb-3 text-center" id="link-training">
+                                        <span class="text-muted small">尚未上傳</span>
+                                    </div>
+                                    <input type="file" class="form-control form-control-sm" id="file-training" accept=".pdf,.doc,.docx">
+                                </div>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                    <button type="button" class="btn btn-primary" id="btn-save-plan" onclick="savePlans()">
+                        <i class="fas fa-save me-1"></i>儲存並上傳
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="importModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">匯入資料預覽</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="import-preview-area" class="table-responsive mb-3" style="max-height: 400px;"></div>
+                    <div class="alert alert-info small mb-0">
+                        <i class="fas fa-info-circle me-1"></i> 請確認資料無誤。公司統編若重複將更新資料；醫護人員將直接新增。
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="btn-confirm-import">確認匯入</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="config.js"></script>
+    
+    <script src="layout.js"></script>
+
+    <script>
+        // 初始化 Supabase (使用 Config)
+        if (typeof window.AppConfig === 'undefined') {
+            console.error('設定檔未載入！');
+        }
+
+        const supabaseClient = window.supabase.createClient(
+            window.AppConfig.Supabase.URL, 
+            window.AppConfig.Supabase.KEY
+        );
+
+        // 4. 初始化與資料載入
+        document.addEventListener('DOMContentLoaded', () => {
+            // Layout.js 已執行基本的登入檢查，但此頁面需要特別排除顧問 (Consultant)
+            const roleKey = window.AppConfig.StorageKeys.USER_ROLE;
+            const role = sessionStorage.getItem(roleKey);
+            
+            if (role === 'consultant') {
+                alert('權限不足：顧問帳號無法存取此頁面。');
+                window.location.href = window.AppConfig.Paths.DASHBOARD || 'dashboard.html';
+                return;
+            }
+
+            // 執行資料載入
+            loadCompanies();
+            loadStaff();
+            loadRecords(); 
+            loadPlans();
+        });
+
+        // ==========================================
+        // 1. 公司主檔邏輯
+        // ==========================================
+        async function loadCompanies() {
+            const tbody = document.getElementById('companyTableBody');
+            const search = document.getElementById('search-company').value.trim();
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>';
+
+            let query = supabaseClient.from('companies').select('*').order('created_at', {ascending: false});
+            if(search) query = query.ilike('name', `%${search}%`);
+
+            const { data, error } = await query;
+            if(error) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">載入失敗: ${error.message}</td></tr>`;
+                return;
+            }
+
+            document.getElementById('stat-company-count').innerText = data.length;
+            document.getElementById('stat-active-contract').innerText = data.filter(c => c.is_active).length;
+
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">尚無資料</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(c => `
+                <tr>
+                    <td class="font-monospace">${c.tax_id}</td>
+                    <td class="fw-bold text-primary" style="cursor:pointer" onclick="editCompany('${c.id}')">${c.name}</td>
+                    <td>${c.address || '-'}</td>
+                    <td>${c.contact_person || '-'}</td>
+                    <td>${c.is_active ? '<span class="badge bg-success">服務中</span>' : '<span class="badge bg-secondary">已結束</span>'}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary" onclick="editCompany('${c.id}')"><i class="fas fa-edit"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openCompanyModal() {
+            document.getElementById('companyForm').reset();
+            document.getElementById('company-id').value = '';
+            document.getElementById('companyModalTitle').innerText = '新增事業單位';
+            document.getElementById('contract-end').disabled = true;
+            document.getElementById('btn-delete-company').style.display = 'none'; 
+            new bootstrap.Modal(document.getElementById('companyModal')).show();
+        }
+
+        async function editCompany(id) {
+            const { data, error } = await supabaseClient.from('companies').select('*').eq('id', id).single();
+            if(error) return alert('讀取失敗');
+
+            document.getElementById('company-id').value = data.id;
+            document.getElementById('company-tax-id').value = data.tax_id;
+            document.getElementById('company-name').value = data.name;
+            document.getElementById('company-address').value = data.address || '';
+            document.getElementById('company-contact').value = data.contact_person || '';
+            document.getElementById('company-phone').value = data.phone || '';
+            document.getElementById('contract-start').value = data.contract_start_date || '';
+            
+            const isActive = data.is_active;
+            document.getElementById('contract-active').checked = isActive;
+            const endInput = document.getElementById('contract-end');
+            endInput.value = data.contract_end_date || '';
+            endInput.disabled = isActive;
+
+            document.getElementById('companyModalTitle').innerText = '編輯事業單位';
+            document.getElementById('btn-delete-company').style.display = 'block'; 
+            new bootstrap.Modal(document.getElementById('companyModal')).show();
+        }
+
+        async function saveCompany() {
+            const id = document.getElementById('company-id').value; 
+            const payload = {
+                tax_id: document.getElementById('company-tax-id').value,
+                name: document.getElementById('company-name').value,
+                address: document.getElementById('company-address').value,
+                contact_person: document.getElementById('company-contact').value,
+                phone: document.getElementById('company-phone').value,
+                contract_start_date: document.getElementById('contract-start').value || null,
+                contract_end_date: document.getElementById('contract-end').value || null,
+                is_active: document.getElementById('contract-active').checked,
+                updated_by: sessionStorage.getItem('currentUserId')
+            };
+
+            if(!payload.tax_id || !payload.name) return alert('統編與名稱為必填');
+
+            let error;
+            let newCompanyId = id;
+
+            if(id) {
+                ({ error } = await supabaseClient.from('companies').update(payload).eq('id', id));
+            } else {
+                // 自動建立 Workplace
+                payload.created_by = sessionStorage.getItem('currentUserId');
+                const { data, error: insertError } = await supabaseClient.from('companies').insert(payload).select('id').single();
+                error = insertError;
+                
+                if (!error && data) {
+                    newCompanyId = data.id;
+                    const { error: wpError } = await supabaseClient.from('workplaces').insert({
+                        company_id: newCompanyId,
+                        department_name: '全廠',
+                        hazard_type: '無',
+                        hazard_count: 0,
+                        created_by: sessionStorage.getItem('currentUserId')
+                    });
+                    if (wpError) console.error('自動建立場所失敗:', wpError);
+                }
+            }
+
+            if(error) {
+                alert('儲存失敗: ' + error.message);
+            } else {
+                alert('✅ 儲存成功！' + (!id ? '(已自動建立預設作業場所)' : ''));
+                bootstrap.Modal.getInstance(document.getElementById('companyModal')).hide();
+                loadCompanies();
+            }
+        }
+        
+        async function deleteCompany() {
+            const id = document.getElementById('company-id').value;
+            if(!id) return;
+
+            try {
+                // 1. 取得該公司的所有場所 ID
+                const { data: wpData, error: wpError } = await supabaseClient
+                    .from('workplaces')
+                    .select('id')
+                    .eq('company_id', id);
+
+                if (wpError) throw wpError;
+                
+                // 2. 檢查是否有服務紀錄
+                if (wpData && wpData.length > 0) {
+                    const wpIds = wpData.map(w => w.id);
+                    const { count, error: countError } = await supabaseClient
+                        .from('service_records')
+                        .select('*', { count: 'exact', head: true })
+                        .in('workplace_id', wpIds);
+                    
+                    if (countError) throw countError;
+
+                    if (count > 0) {
+                        alert('⚠️ 警告：該公司已有服務執行紀錄，不得刪除！\n\n請先移除相關服務紀錄後再試。');
+                        return;
+                    }
+                }
+                
+                if(!confirm('確定要刪除此公司資料嗎？\n\n注意：相關的作業場所設定將一併被刪除。')) return;
+
+                const { error: delError } = await supabaseClient.from('companies').delete().eq('id', id);
+                if(delError) throw delError;
+
+                alert('🗑️ 公司資料已刪除');
+                bootstrap.Modal.getInstance(document.getElementById('companyModal')).hide();
+                loadCompanies();
+
+            } catch (err) {
+                console.error(err);
+                alert('刪除檢查失敗: ' + err.message);
+            }
+        }
+
+        function toggleEndDate(checkbox) {
+            const endInput = document.getElementById('contract-end');
+            endInput.disabled = checkbox.checked;
+            if(checkbox.checked) endInput.value = '';
+        }
+
+        // ==========================================
+        // 2. 醫護人員邏輯
+        // ==========================================
+        async function loadStaff() {
+            const tbody = document.getElementById('staffTableBody');
+            const search = document.getElementById('search-staff').value.trim();
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border spinner-border-sm text-success"></div></td></tr>';
+
+            let query = supabaseClient.from('medical_staff').select('*').order('created_at', {ascending: false});
+            if(search) query = query.ilike('name', `%${search}%`);
+
+            const { data, error } = await query;
+            if(error) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">載入失敗: ${error.message}</td></tr>`;
+                return;
+            }
+
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">尚無資料</td></tr>';
+                return;
+            }
+            
+            const roleMap = {
+                'consultant': '顧問',
+                'admin': '管理員',
+                'doc_control': '文管人員',
+                'medical': '醫護人員'
+            };
+
+            tbody.innerHTML = data.map(s => `
+                <tr>
+                    <td class="fw-bold">${s.name} ${!s.is_active ? '<span class="badge bg-danger ms-1">離職</span>' : ''}</td>
+                    <td>${roleMap[s.role] || s.role}</td> 
+                    <td>${s.employment_type || '-'}</td>
+                    <td>${s.phone || '-'}</td>
+                    <td>${s.email || '-'}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-success" onclick="editStaff('${s.id}')"><i class="fas fa-edit"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openStaffModal() {
+            document.getElementById('staffForm').reset();
+            document.getElementById('staff-id').value = '';
+            document.getElementById('staffModalTitle').innerText = '新增醫護人員';
+            document.getElementById('staff-resign').disabled = true;
+            document.getElementById('btn-delete-staff').style.display = 'none';
+            new bootstrap.Modal(document.getElementById('staffModal')).show();
+        }
+
+        async function editStaff(id) {
+            const { data, error } = await supabaseClient.from('medical_staff').select('*').eq('id', id).single();
+            if(error) return alert('讀取失敗');
+
+            document.getElementById('staff-id').value = data.id;
+            document.getElementById('staff-name').value = data.name;
+            document.getElementById('staff-role').value = data.role;
+            document.getElementById('staff-type').value = data.employment_type || '兼職';
+            document.getElementById('staff-phone').value = data.phone || '';
+            document.getElementById('staff-email').value = data.email || '';
+            document.getElementById('staff-onboard').value = data.onboard_date || '';
+            
+            const isActive = data.is_active;
+            document.getElementById('staff-active').checked = isActive;
+            const resignInput = document.getElementById('staff-resign');
+            resignInput.value = data.resignation_date || '';
+            resignInput.disabled = isActive;
+
+            document.getElementById('staffModalTitle').innerText = '編輯醫護人員';
+            document.getElementById('btn-delete-staff').style.display = 'block';
+            new bootstrap.Modal(document.getElementById('staffModal')).show();
+        }
+
+        async function saveStaff() {
+            const id = document.getElementById('staff-id').value;
+            const payload = {
+                name: document.getElementById('staff-name').value,
+                role: document.getElementById('staff-role').value,
+                employment_type: document.getElementById('staff-type').value,
+                phone: document.getElementById('staff-phone').value,
+                email: document.getElementById('staff-email').value,
+                onboard_date: document.getElementById('staff-onboard').value || null,
+                resignation_date: document.getElementById('staff-resign').value || null,
+                is_active: document.getElementById('staff-active').checked,
+                updated_by: sessionStorage.getItem('currentUserId')
+            };
+
+            if(!payload.name) return alert('姓名為必填');
+
+            let error;
+            if(id) {
+                ({ error } = await supabaseClient.from('medical_staff').update(payload).eq('id', id));
+            } else {
+                payload.created_by = sessionStorage.getItem('currentUserId');
+                ({ error } = await supabaseClient.from('medical_staff').insert(payload));
+            }
+
+            if(error) alert('儲存失敗: ' + error.message);
+            else {
+                bootstrap.Modal.getInstance(document.getElementById('staffModal')).hide();
+                loadStaff();
+            }
+        }
+
+        async function deleteStaff() {
+            const id = document.getElementById('staff-id').value;
+            if(!id) return;
+
+            try {
+                const { count, error: countError } = await supabaseClient
+                    .from('service_records')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('consultant_id', id);
+                
+                if (countError) throw countError;
+
+                if (count > 0) {
+                    alert('⚠️ 警告：該人員已有負責的服務執行紀錄，不得刪除！\n\n請先將相關紀錄移轉給其他顧問後再試。');
+                    return;
+                }
+
+                if(!confirm('確定要刪除此醫護人員資料嗎？此動作無法復原。')) return;
+
+                const { error: delError } = await supabaseClient.from('medical_staff').delete().eq('id', id);
+                if(delError) throw delError;
+
+                alert('🗑️ 人員資料已刪除');
+                bootstrap.Modal.getInstance(document.getElementById('staffModal')).hide();
+                loadStaff();
+
+            } catch (err) {
+                console.error(err);
+                alert('刪除檢查失敗: ' + err.message);
+            }
+        }
+
+        function toggleResignDate(checkbox) {
+            const input = document.getElementById('staff-resign');
+            input.disabled = checkbox.checked;
+            if(checkbox.checked) input.value = '';
+        }
+        
+        // ==========================================
+        // 3. 服務執行歷程邏輯
+        // ==========================================
+        async function loadRecords() {
+            const tbody = document.getElementById('recordTableBody');
+            const search = document.getElementById('search-record').value.trim();
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner-border spinner-border-sm text-warning"></div></td></tr>';
+
+            let query = supabaseClient.from('service_records')
+                .select(`
+                    id, visit_date, start_time, end_time, service_year,
+                    workplaces ( id, companies ( name ) ),
+                    medical_staff ( name )
+                `)
+                .order('visit_date', {ascending: false});
+
+            const { data, error } = await query;
+
+            if(error) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">載入失敗: ${error.message}</td></tr>`;
+                return;
+            }
+            
+            let filteredData = data;
+            if (search) {
+                const s = search.toLowerCase();
+                filteredData = data.filter(r => {
+                    const compName = r.workplaces?.companies?.name || '';
+                    const staffName = r.medical_staff?.name || '';
+                    return compName.toLowerCase().includes(s) || staffName.toLowerCase().includes(s);
+                });
+            }
+
+            document.getElementById('stat-record-count').innerText = filteredData.length;
+
+            if(filteredData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">尚無資料</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filteredData.map(r => {
+                const compName = r.workplaces?.companies?.name || '<span class="text-muted">未知公司</span>';
+                const staffName = r.medical_staff?.name || '<span class="text-muted">未知顧問</span>';
+                const timeStr = (r.start_time && r.end_time) ? `${r.start_time.slice(0,5)} ~ ${r.end_time.slice(0,5)}` : '-';
+                
+                const dateDisplay = r.visit_date 
+                    ? `<span class="font-monospace">${r.visit_date}</span>` 
+                    : `<span class="badge bg-secondary">📅 年度母案 (未定)</span>`;
+
+                return `
+                <tr>
+                    <td>${dateDisplay}</td>
+                    <td class="fw-bold">${compName}</td>
+                    <td>${staffName}</td>
+                    <td class="small">${timeStr}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary" onclick="editRecord('${r.id}')"><i class="fas fa-edit"></i></button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        async function openRecordModal() {
+            await loadDropdowns();
+
+            document.getElementById('recordForm').reset();
+            document.getElementById('record-id').value = '';
+            document.getElementById('recordModalTitle').innerText = '新增服務歷程 (母案)';
+            document.getElementById('btn-delete-record').style.display = 'none';
+            new bootstrap.Modal(document.getElementById('recordModal')).show();
+        }
+
+        async function loadDropdowns() {
+             const coSelect = document.getElementById('record-company');
+             const staffSelect = document.getElementById('record-consultant');
+             
+             const { data: companies } = await supabaseClient
+                 .from('companies')
+                 .select('id, name, is_active') 
+                 .order('is_active', {ascending: false}) 
+                 .order('name');
+                 
+             coSelect.innerHTML = '<option value="">請選擇...</option>' + 
+                 companies.map(c => {
+                     const suffix = c.is_active ? '' : ' (已結案)';
+                     return `<option value="${c.id}">${c.name}${suffix}</option>`;
+                 }).join('');
+ 
+             const { data: staffs } = await supabaseClient
+                 .from('medical_staff')
+                 .select('id, name')
+                 .eq('is_active', true) 
+                 .order('name');
+                 
+             staffSelect.innerHTML = '<option value="">請選擇...</option>' + staffs.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        }
+        
+        async function editRecord(id) {
+            await loadDropdowns(); 
+
+            const { data, error } = await supabaseClient
+                .from('service_records')
+                .select('*, workplaces(company_id)')
+                .eq('id', id)
+                .single();
+
+            if (error) return alert('讀取失敗: ' + error.message);
+
+            document.getElementById('record-id').value = data.id;
+            
+            if (data.workplaces && data.workplaces.company_id) {
+                document.getElementById('record-company').value = data.workplaces.company_id;
+            }
+
+            document.getElementById('record-consultant').value = data.consultant_id;
+            document.getElementById('record-date').value = data.visit_date || ''; 
+            document.getElementById('record-start').value = data.start_time || '';
+            document.getElementById('record-end').value = data.end_time || '';
+            document.getElementById('record-items').value = data.execution_items || '';
+
+            document.getElementById('recordModalTitle').innerText = '編輯服務歷程';
+            document.getElementById('btn-delete-record').style.display = 'block';
+            new bootstrap.Modal(document.getElementById('recordModal')).show();
+        }
+
+        async function saveRecord() {
+            const id = document.getElementById('record-id').value;
+            const companyId = document.getElementById('record-company').value;
+            const consultantId = document.getElementById('record-consultant').value;
+            const visitDateRaw = document.getElementById('record-date').value;
+            const startTime = document.getElementById('record-start').value || null;
+            const endTime = document.getElementById('record-end').value || null;
+            const items = document.getElementById('record-items').value || null;
+
+            if(!companyId || !consultantId) return alert('公司與顧問為必填欄位 (日期可保留空白作為母案)');
+
+            const { data: wpData, error: wpError } = await supabaseClient.from('workplaces').select('id').eq('company_id', companyId).limit(1);
+            
+            if (wpError || !wpData || wpData.length === 0) {
+                return alert('錯誤：該公司尚未建立作業場所。請先至公司資料建立場所。');
+            }
+            const workplaceId = wpData[0].id;
+
+            let visitDate = null;
+            let year = null;
+
+            if (visitDateRaw) {
+                visitDate = visitDateRaw;
+                year = new Date(visitDateRaw).getFullYear();
+            }
+
+            const payload = {
+                workplace_id: workplaceId,
+                visit_date: visitDate,   
+                service_year: year,      
+                consultant_id: consultantId,
+                start_time: startTime,
+                end_time: endTime,
+                execution_items: items,
+                updated_by: sessionStorage.getItem('currentUserId')
+            };
+
+            let error;
+            if (id) {
+                ({ error } = await supabaseClient.from('service_records').update(payload).eq('id', id));
+            } else {
+                payload.created_by = sessionStorage.getItem('currentUserId');
+                ({ error } = await supabaseClient.from('service_records').insert(payload));
+            }
+
+            if(error) alert('儲存失敗: ' + error.message);
+            else {
+                alert('✅ 儲存成功！' + (!visitDate ? ' (已建立母案)' : ''));
+                bootstrap.Modal.getInstance(document.getElementById('recordModal')).hide();
+                loadRecords();
+            }
+        }
+        
+        async function deleteRecord() {
+            const id = document.getElementById('record-id').value;
+            if(!id) return;
+
+            if(!confirm('確定要刪除此筆服務紀錄嗎？此動作無法復原。')) return;
+
+            const { error } = await supabaseClient.from('service_records').delete().eq('id', id);
+
+            if(error) alert('刪除失敗: ' + error.message);
+            else {
+                alert('🗑️ 已刪除資料');
+                bootstrap.Modal.getInstance(document.getElementById('recordModal')).hide();
+                loadRecords();
+            }
+        }
+
+        // ==========================================
+        // 4. 計畫管理邏輯
+        // ==========================================
+        let currentPlanData = {}; 
+
+        async function loadPlans() {
+            const tbody = document.getElementById('planTableBody');
+            const search = document.getElementById('search-plan').value.trim();
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div></td></tr>';
+
+            let query = supabaseClient.from('service_records')
+                .select(`
+                    id, service_year, visit_date, management_plans,
+                    workplaces ( id, companies ( name ) ),
+                    medical_staff ( name )
+                `)
+                .order('service_year', {ascending: false})
+                .order('visit_date', {ascending: false}); 
+
+            const { data, error } = await query;
+            if (error) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">載入失敗: ${error.message}</td></tr>`;
+                return;
+            }
+
+            let filteredData = data;
+            if (search) {
+                const s = search.toLowerCase();
+                filteredData = data.filter(r => {
+                    const compName = r.workplaces?.companies?.name || '';
+                    return compName.toLowerCase().includes(s);
+                });
+            }
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">尚無資料</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filteredData.map(r => {
+                const compName = r.workplaces?.companies?.name || '未知公司';
+                const year = r.service_year || '<span class="text-muted small">未定</span>';
+                const plans = r.management_plans || {}; 
+                
+                const renderPlanLink = (key) => {
+                    if (plans[key] && plans[key].url) {
+                        const dateStr = plans[key].updated_at 
+                            ? new Date(plans[key].updated_at).toLocaleString('zh-TW', {
+                                year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit'
+                              })
+                            : '已上傳';
+                            
+                        return `<a href="${plans[key].url}" target="_blank" class="plan-link text-success" title="${plans[key].name}">
+                                    <i class="fas fa-check-circle me-1"></i>${dateStr}
+                                </a>`;
+                    }
+                    return `<span class="plan-missing">未上傳</span>`;
+                };
+
+                return `
+                <tr>
+                    <td class="font-monospace fw-bold text-primary">${year}</td>
+                    <td class="fw-bold">${compName}</td>
+                    <td class="text-center plan-cell">${renderPlanLink('plan_osh')}</td>
+                    <td class="text-center plan-cell">${renderPlanLink('plan_risk')}</td>
+                    <td class="text-center plan-cell">${renderPlanLink('plan_training')}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary" onclick="openPlanModal('${r.id}')">
+                            <i class="fas fa-edit me-1"></i>管理
+                        </button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        async function openPlanModal(recordId) {
+            const { data, error } = await supabaseClient
+                .from('service_records')
+                .select(`
+                    id, service_year, management_plans, workplace_id,
+                    workplaces ( companies ( name ) ),
+                    medical_staff ( name )
+                `)
+                .eq('id', recordId)
+                .single();
+
+            if (error) return alert('讀取失敗: ' + error.message);
+
+            document.getElementById('plan-record-id').value = data.id;
+            document.getElementById('plan-workplace-id').value = data.workplace_id;
+            document.getElementById('plan-company-name').innerText = data.workplaces?.companies?.name || '未知公司';
+            document.getElementById('plan-consultant-name').innerText = data.medical_staff?.name || '-';
+            document.getElementById('plan-year').value = data.service_year || new Date().getFullYear();
+
+            currentPlanData = data.management_plans || {};
+            
+            const updateLinkDisplay = (key, elId) => {
+                const el = document.getElementById(elId);
+                if (currentPlanData[key] && currentPlanData[key].url) {
+                    const dateStr = new Date(currentPlanData[key].updated_at).toLocaleString('zh-TW');
+                    el.innerHTML = `
+                        <div class="mb-2">
+                            <a href="${currentPlanData[key].url}" target="_blank" class="text-success text-decoration-none fw-bold small">
+                                <i class="fas fa-file-pdf me-1"></i>${currentPlanData[key].name}
+                            </a>
+                        </div>
+                        <div class="text-muted" style="font-size: 0.75rem;">
+                            上傳於：${dateStr}
+                        </div>
+                    `;
+                } else {
+                    el.innerHTML = '<span class="text-muted small">尚未上傳</span>';
+                }
+            };
+
+            updateLinkDisplay('plan_osh', 'link-osh');
+            updateLinkDisplay('plan_risk', 'link-risk');
+            updateLinkDisplay('plan_training', 'link-training');
+
+            document.getElementById('file-osh').value = '';
+            document.getElementById('file-risk').value = '';
+            document.getElementById('file-training').value = '';
+
+            new bootstrap.Modal(document.getElementById('planModal')).show();
+        }
+
+        async function savePlans() {
+            const btn = document.getElementById('btn-save-plan');
+            const recordId = document.getElementById('plan-record-id').value;
+            const workplaceId = document.getElementById('plan-workplace-id').value;
+            const year = document.getElementById('plan-year').value;
+
+            if (!year) return alert('請輸入所屬年度');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>上傳中...';
+
+            try {
+                await supabaseClient.from('service_records').update({ service_year: year }).eq('id', recordId);
+
+                const uploadFile = async (fileInputId, planKey) => {
+                    const fileInput = document.getElementById(fileInputId);
+                    const file = fileInput.files[0];
+                    if (!file) return null; 
+
+                    const fileExt = file.name.split('.').pop();
+                    const safeFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 10)}.${fileExt}`;
+                    const filePath = `${workplaceId}/${year}/${safeFileName}`;
+
+                    const { data, error } = await supabaseClient.storage
+                        .from('plans')
+                        .upload(filePath, file, { upsert: true });
+
+                    if (error) throw error;
+
+                    const { data: { publicUrl } } = supabaseClient.storage.from('plans').getPublicUrl(filePath);
+
+                    return {
+                        url: publicUrl,
+                        name: file.name, 
+                        updated_at: new Date().toISOString(),
+                        uploaded_by: sessionStorage.getItem('currentUserId')
+                    };
+                };
+
+                const [resOsh, resRisk, resTraining] = await Promise.all([
+                    uploadFile('file-osh', 'plan_osh'),
+                    uploadFile('file-risk', 'plan_risk'),
+                    uploadFile('file-training', 'plan_training')
+                ]);
+
+                if (resOsh) currentPlanData.plan_osh = resOsh;
+                if (resRisk) currentPlanData.plan_risk = resRisk;
+                if (resTraining) currentPlanData.plan_training = resTraining;
+
+                const { error: updateError } = await supabaseClient
+                    .from('service_records')
+                    .update({ management_plans: currentPlanData })
+                    .eq('id', recordId);
+
+                if (updateError) throw updateError;
+
+                alert('✅ 計畫上傳成功！');
+                bootstrap.Modal.getInstance(document.getElementById('planModal')).hide();
+                loadPlans();
+
+            } catch (err) {
+                console.error(err);
+                alert('❌ 上傳失敗: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i>儲存並上傳';
+            }
+        }
+        
+        async function deletePlanFile(key) {
+            const recordId = document.getElementById('plan-record-id').value;
+            
+            if(!currentPlanData[key] || !currentPlanData[key].url) {
+                return alert('尚未上傳檔案，無法刪除。');
+            }
+            
+            if(!confirm(`確定要刪除「${currentPlanData[key].name}」嗎？\n\n注意：這將會從系統中永久移除此檔案。`)) return;
+            
+            try {
+                delete currentPlanData[key];
+                
+                const { error } = await supabaseClient
+                    .from('service_records')
+                    .update({ management_plans: currentPlanData })
+                    .eq('id', recordId);
+                    
+                if(error) throw error;
+                
+                alert('🗑️ 檔案已移除');
+                
+                const elIdMap = {
+                    'plan_osh': 'link-osh',
+                    'plan_risk': 'link-risk',
+                    'plan_training': 'link-training'
+                };
+                document.getElementById(elIdMap[key]).innerHTML = '<span class="text-muted small">尚未上傳</span>';
+                
+            } catch(e) {
+                console.error(e);
+                alert('刪除失敗: ' + e.message);
+            }
+        }
+
+        // ==========================================
+        // 5. 匯入功能 (Excel Import)
+        // ==========================================
+        let pendingImportData = [];
+        let pendingImportType = '';
+
+        async function downloadTemplate(type) {
+            let csvContent = "\uFEFF"; 
+
+            if(type === 'company') {
+                csvContent += "統一編號,事業單位名稱,公司地址,聯絡人,電話,合約開始日期(YYYY-MM-DD),合約結束日期(YYYY-MM-DD)\n";
+                csvContent += "85204196,範例公司,台北市信義區忠孝東路一段1號,王大明,0912345678,2025-01-01,2025-12-31";
+                triggerDownload(csvContent, 'company_import_template.csv');
+
+            } else if (type === 'staff') {
+                csvContent += "姓名,身分角色(consultant/admin/doc_control),職務型態(全職/兼職),電話,Email,入職日期(YYYY-MM-DD)\n";
+                csvContent += "王顧問,consultant,兼職,0911222333,consultant@test.com,2024-01-01\n";
+                csvContent += "陳管理,admin,全職,0922333444,admin@test.com,2024-02-01\n";
+                csvContent += "林文管,doc_control,全職,0933444555,doc@test.com,2024-03-01";
+                triggerDownload(csvContent, 'staff_import_template.csv');
+
+            } else if (type === 'record') {
+                try {
+                    const { data: activeCompanies, error } = await supabaseClient
+                        .from('companies')
+                        .select(`
+                            name,
+                            consultant_id,
+                            medical_staff ( name )
+                        `)
+                        .eq('is_active', true)
+                        .order('name');
+
+                    if (error) throw error;
+
+                    csvContent += "公司名稱,顧問姓名,服務日期(YYYY-MM-DD),開始時間(HH:mm),結束時間(HH:mm),執行事項\n";
+
+                    if (!activeCompanies || activeCompanies.length === 0) {
+                        csvContent += "範例公司,王顧問,,09:00,12:00,建立母案";
+                    } else {
+                        activeCompanies.forEach(c => {
+                            const consultantName = c.medical_staff ? c.medical_staff.name : '';
+                            csvContent += `${c.name},${consultantName},,,,\n`;
+                        });
+                    }
+
+                    triggerDownload(csvContent, 'service_record_with_companies.csv');
+
+                } catch (e) {
+                    console.error(e);
+                    alert('產生範本失敗: ' + e.message);
+                }
+            }
+        }
+
+        function triggerDownload(content, filename) {
+            const encodedUri = encodeURI("data:text/csv;charset=utf-8," + content);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function handleFileSelect(input, type) {
+            const file = input.files[0];
+            if(!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1}); 
+                
+                jsonData.shift(); 
+                parseAndImportData(jsonData, type);
+                input.value = ''; 
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        async function parseAndImportData(rows, type) {
+            pendingImportType = type;
+            pendingImportData = []; 
+            const previewArea = document.getElementById('import-preview-area');
+            let html = '<table class="table table-sm table-bordered table-hover"><thead><tr class="table-secondary">';
+
+            const modal = new bootstrap.Modal(document.getElementById('importModal'));
+            modal.show();
+
+            try {
+                if(type === 'company') {
+                    html += '<th>統編</th><th>名稱</th><th>地址</th><th>聯絡人</th><th>狀態</th><th>開始日</th><th>結束日</th></tr></thead><tbody>';
+                    rows.forEach(row => {
+                        if(!row[0]) return; 
+                        const taxId = row[0]; const name = row[1]; const address = row[2];
+                        const contact = row[3]; const phone = row[4];   
+                        const startDate = formatDate(row[5]); const endDate = formatDate(row[6]);
+                        
+                        let isActive = true;
+                        if(endDate && endDate < new Date().toISOString().split('T')[0]) isActive = false;
+
+                        pendingImportData.push({
+                            tax_id: String(taxId).trim(), name: String(name).trim(), address: String(address || ''),
+                            contact_person: contact, phone: String(phone || ''),
+                            contract_start_date: startDate, contract_end_date: endDate,
+                            is_active: isActive, created_by: sessionStorage.getItem('currentUserId')
+                        });
+                        html += `<tr><td>${taxId}</td><td>${name}</td><td>${address||''}</td><td>${contact||''}</td><td>${isActive?'Y':'N'}</td><td>${startDate||''}</td><td>${endDate||''}</td></tr>`;
+                    });
+
+                } else if (type === 'staff') {
+                    html += '<th>姓名</th><th>角色</th><th>職務</th><th>Email</th><th>入職日</th></tr></thead><tbody>';
+                    rows.forEach(row => {
+                        if(!row[0]) return;
+                        const name = row[0]; const role = row[1] || 'consultant'; const type = row[2] || '兼職';
+                        const phone = row[3]; const email = row[4]; const onboard = formatDate(row[5]);
+                        
+                        let derivedSystemRole = 'doc_control'; 
+                        const roleStr = String(role).toLowerCase(); 
+                        
+                        if (roleStr.includes('consultant') || roleStr.includes('顧問')) {
+                            derivedSystemRole = 'consultant';
+                        } else if (roleStr.includes('admin') || roleStr.includes('管理')) {
+                            derivedSystemRole = 'admin';
+                        }
+
+                        pendingImportData.push({
+                            name: String(name).trim(), 
+                            role: role, 
+                            system_role: derivedSystemRole, 
+                            employment_type: type,
+                            phone: String(phone || ''), email: email, onboard_date: onboard,
+                            is_active: true, created_by: sessionStorage.getItem('currentUserId')
+                        });
+                        html += `<tr><td>${name}</td><td>${role}</td><td>${type}</td><td>${email||''}</td><td>${onboard||''}</td></tr>`;
+                    });
+
+                } else if (type === 'record') {
+                    html += '<th>公司名稱</th><th>顧問姓名</th><th>日期</th><th>時間</th><th>事項</th><th>狀態</th></tr></thead><tbody>';
+                    
+                    previewArea.innerHTML = '<div class="text-center p-3"><span class="spinner-border text-primary"></span> 正在核對公司與顧問資料庫...</div>';
+                    
+                    const { data: allCompanies } = await supabaseClient.from('companies').select('id, name, workplaces(id)');
+                    const { data: allStaff } = await supabaseClient.from('medical_staff').select('id, name');
+
+                    const compMap = {}; 
+                    if(allCompanies) {
+                        allCompanies.forEach(c => {
+                            if(c.workplaces && c.workplaces.length > 0) compMap[c.name.trim()] = c.workplaces[0].id;
+                        });
+                    }
+                    const staffMap = {};
+                    if(allStaff) {
+                        allStaff.forEach(s => {
+                            staffMap[s.name.trim()] = s.id;
+                        });
+                    }
+
+                    rows.forEach(row => {
+                        if(!row[0]) return; 
+                        
+                        const cName = String(row[0]).trim(); 
+                        const sName = String(row[1] || '').trim(); 
+                        const date = formatDate(row[2]);      
+                        
+                        const startTime = row[3] ? String(row[3]).trim() : null; 
+                        const endTime = row[4] ? String(row[4]).trim() : null;   
+                        const items = row[5] ? String(row[5]).trim() : null;     
+
+                        const wpId = compMap[cName];
+                        const stId = staffMap[sName];
+                        const year = date ? new Date(date).getFullYear() : null;
+
+                        if(wpId && stId) {
+                             pendingImportData.push({
+                                workplace_id: wpId, 
+                                consultant_id: stId, 
+                                visit_date: date,       
+                                service_year: year,
+                                start_time: startTime, 
+                                end_time: endTime,      
+                                execution_items: items,
+                                created_by: sessionStorage.getItem('currentUserId')
+                            });
+                            
+                            const timeDisplay = (startTime && endTime) ? `${startTime}~${endTime}` : '-';
+                            const dateDisplay = date ? date : '<span class="text-muted fst-italic">母案</span>';
+                            
+                            html += `<tr class="table-success">
+                                <td>${cName}</td>
+                                <td>${sName}</td>
+                                <td>${dateDisplay}</td>
+                                <td>${timeDisplay}</td>
+                                <td>${items || ''}</td>
+                                <td><span class="badge bg-success">OK</span></td>
+                            </tr>`;
+                        } else {
+                            let errorMsg = [];
+                            if(!wpId) errorMsg.push("無場所");
+                            if(!stId) errorMsg.push("無顧問");
+                            
+                            html += `<tr class="table-danger">
+                                <td>${cName}</td>
+                                <td>${sName}</td>
+                                <td>${date || '-'}</td>
+                                <td>-</td>
+                                <td>${items || ''}</td>
+                                <td><span class="badge bg-danger">${errorMsg.join(', ')}</span></td>
+                            </tr>`;
+                        }
+                    });
+                }
+
+                html += '</tbody></table>';
+                
+                const validCount = pendingImportData.length;
+                const totalCount = rows.filter(r => r[0]).length;
+                html = `<div class="alert ${validCount > 0 ? 'alert-info' : 'alert-danger'} mb-2">
+                            <strong>預覽結果：</strong> 共讀取 ${totalCount} 筆，有效 <span class="text-success fw-bold">${validCount}</span> 筆，無效 <span class="text-danger fw-bold">${totalCount - validCount}</span> 筆。
+                            ${validCount === 0 ? '<br/>❌ 無有效資料可匯入，請檢查 Excel 名稱是否與系統一致。' : ''}
+                        </div>` + html;
+
+                previewArea.innerHTML = html;
+
+            } catch (e) {
+                console.error(e);
+                previewArea.innerHTML = `<div class="alert alert-danger">解析失敗: ${e.message}</div>`;
+            }
+        }
+
+        function formatDate(cellVal) {
+            if(!cellVal) return null;
+            if(typeof cellVal === 'number') {
+                const date = new Date(Math.round((cellVal - 25569)*86400*1000));
+                return date.toISOString().split('T')[0];
+            }
+            const strVal = String(cellVal).trim();
+            const dateObj = new Date(strVal);
+            if (!isNaN(dateObj.getTime())) {
+                return dateObj.toISOString().split('T')[0];
+            }
+            return strVal;
+        }
+
+        document.getElementById('btn-confirm-import').addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.innerText = '匯入中...';
+
+            try {
+                if(pendingImportType === 'company') {
+                    const { data: companies, error } = await supabaseClient
+                        .from('companies')
+                        .upsert(pendingImportData, { onConflict: 'tax_id' })
+                        .select('id'); 
+                    
+                    if(error) throw error;
+
+                    if (companies && companies.length > 0) {
+                        const companyIds = companies.map(c => c.id);
+
+                        const { data: existingWp } = await supabaseClient
+                            .from('workplaces')
+                            .select('company_id')
+                            .in('company_id', companyIds);
+                        
+                        const existingCompanyIds = new Set(existingWp ? existingWp.map(wp => wp.company_id) : []);
+
+                        const newWorkplaces = companies
+                            .filter(c => !existingCompanyIds.has(c.id))
+                            .map(c => ({
+                                company_id: c.id,
+                                department_name: '全廠',
+                                hazard_type: '無',
+                                hazard_count: 0,
+                                created_by: sessionStorage.getItem('currentUserId')
+                            }));
+
+                        if (newWorkplaces.length > 0) {
+                            const { error: wpError } = await supabaseClient.from('workplaces').insert(newWorkplaces);
+                            if(wpError) console.error('自動建立場所失敗:', wpError.message);
+                        }
+                    }
+
+                } else if(pendingImportType === 'staff') {
+                    const { error } = await supabaseClient.from('medical_staff').insert(pendingImportData);
+                    if(error) throw error;
+
+                } else if(pendingImportType === 'record') {
+                    const { error } = await supabaseClient.from('service_records').insert(pendingImportData);
+                    if(error) throw error;
+                }
+
+                alert('✅ 匯入成功！(已自動補齊作業場所)');
+                bootstrap.Modal.getInstance(document.getElementById('importModal')).hide();
+                
+                if(pendingImportType === 'company') loadCompanies();
+                else if(pendingImportType === 'staff') loadStaff();
+                else loadRecords();
+
+            } catch(e) {
+                console.error(e);
+                alert('❌ 匯入發生錯誤: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '確認匯入';
+            }
+        });
+
+    </script>
+</body>
+</html>
